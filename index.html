@@ -67,36 +67,36 @@
 
         {"item": {
             "catTitle": "Largemouth Bass",
-            "totalQuantity": "6",
+            "totalQuantity": "0",
             "description": "These baits have been selected based on your profile, location, and time of year.",
             "baits": [
             {
                 "baitTitle": "Hard Baits",
-                "baitQuantity": "2"
+                "baitQuantity": "0"
             },
             {
                 "baitTitle": "Soft Baits",
-                "baitQuantity": "1"
+                "baitQuantity": "0"
             },
             {
                 "baitTitle": "Terminal Tackle",
-                "baitQuantity": "3"
+                "baitQuantity": "0"
             }
             ]
         }
     },
     {"item": {
         "catTitle": "Redfish",
-        "totalQuantity": "3",
+        "totalQuantity": "0",
         "description": "These baits have been selected based on your profile, location, and time of year.",
         "baits": [
         {
             "baitTitle": "Line",
-            "baitQuantity": "2"
+            "baitQuantity": "0"
         },
         {
             "baitTitle": "Soft Baits",
-            "baitQuantity": "1"
+            "baitQuantity": "0"
         }
         ]
     }
@@ -261,9 +261,9 @@ $(document).ready(function(){
     for (var i = 0; i < jsonCategories["Categories"].length; i++)
     {
         /*CATEGORY TITLE*/
-        categoriesString += "<h2>"+jsonCategories["Categories"][i]["item"]["catTitle"]+"</h2>";
+        categoriesString += "<span>"+"<h2>"+jsonCategories["Categories"][i]["item"]["catTitle"]+"</h2>";
         /*CATEGORY TOTAL QUANTITY*/
-        categoriesString += "<span id=\"totalQuantity"+i.toString() +"\">" + jsonCategories["Categories"][i]["item"]["totalQuantity"] +   " </span>";
+        categoriesString += "<span id=\"totalQuantity"+i.toString() +"\">" + jsonCategories["Categories"][i]["item"]["totalQuantity"] +   " </span>"+"</span>";
         /*DESCRIPTION*/
         categoriesString +=  "<h5>"+jsonCategories["Categories"][i]["item"]["description"]+"</h5>";
         
@@ -287,6 +287,7 @@ $(document).ready(function(){
 });
 
 
+/*
 categoriesString = "";
 
 for (var i = 0; i < jsonCategories["Categories"].length; i++)
@@ -305,21 +306,14 @@ for (var i = 0; i < jsonCategories["Categories"].length; i++)
        categoriesString += "<input onclick=\"incrementBait('baitQuantity"+i.toString()+"_"+j.toString()+"','"+i.toString()+"','"+j.toString()+"' )\" id=\"baitAdd"+i.toString()+"_" +j.toString() + "\"" + " type=\"button\" value=\"Add\">";
 
        categoriesString += "<input onclick=\"decrementBait('baitQuantity"+i.toString()+"_"+j.toString()+"','"+i.toString()+"','"+j.toString()+"' )\" id=\"baitRemove"+i.toString()+"_" +j.toString() + "\"" + " type=\"button\" value=\"Remove\">";
-
-
-
-
-
-
    }
 
    categoriesString += "<br><br><input onclick=\"addBaitCategory("+i.toString()+",'Test Bait Category','0')\" id=\"baitRemoveAll"+i.toString() + "\"" + " type=\"button\" value=\"Add Category\">";
    categoriesString += "<br><br><input onclick=\"removeAll("+i.toString()+")\" id=\"baitRemoveAll"+i.toString() + "\"" + " type=\"button\" value=\"Remove All\">";
 
    $(".categories").html(categoriesString);    
-
-
 };
+*/
 
 </script>
 
@@ -415,7 +409,7 @@ var cc = document.getElementById(divname);
 cc.innerHTML = hour+"hrs "+minute+"m "+second+"s "; 
 }
 
-window.setInterval(function(){ShowCountDown(2015,6,1,5,0,'timer');}, interval); 
+window.setInterval(function(){ShowCountDown(2015,6,4,23,59,'timer');}, interval); 
 
 
 </script>
