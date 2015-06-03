@@ -38,6 +38,7 @@ font-family: Arial;
 /*Category Quantity*/
 #totalQuantity0{
 display: inline;
+margin-top: 5px;
 left: 330px;
 /*padding-top: 255px;*/
 color: white;
@@ -72,6 +73,7 @@ height: 21px;
 
 #totalQuantity1{
 left: 330px;
+margin-top: 5px;
 display: inline;
 color: white;
 border-top-width: 0px;

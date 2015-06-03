@@ -176,6 +176,8 @@ for (var i = 0; i < jsonCategories["Categories"].length; i++)
 
 }
 
+
+
 }
 
 function removeAll(catID){
@@ -267,47 +269,19 @@ $(document).ready(function(){
         /*DESCRIPTION*/
         categoriesString +=  "<h5>"+jsonCategories["Categories"][i]["item"]["description"]+"</h5>";
         
-        // for (var j = 0; j < jsonCategories["Categories"][i]["item"]["baits"].length; j++){
+        for (var j = 0; j < jsonCategories["Categories"][i]["item"]["baits"].length; j++){
 
-        //     /*ITEM TITLE AND QUANTITY*/
-        //     categoriesString += "<h4>"+jsonCategories["Categories"][i]["item"]["baits"][j]["baitTitle"] + "</h4>" + "<span id=\"baitQuantity"+i.toString() +"_"+ j.toString() +"\">" + jsonCategories["Categories"][i]["item"]["baits"][j]["baitQuantity"] +   " </span>";
-        //     /*ADD BUTTON*/
-        //     categoriesString += "<input onclick=\"incrementBait('baitQuantity"+i.toString()+"_"+j.toString()+"','"+i.toString()+"','"+j.toString()+"' )\" id=\"baitAdd"+i.toString()+"_" +j.toString() + "\"" + " type=\"button\" value=\"Add\">";
-        //     /*REMOVE BUTTON*/
-        //     categoriesString += "<input onclick=\"decrementBait('baitQuantity"+i.toString()+"_"+j.toString()+"','"+i.toString()+"','"+j.toString()+"' )\" id=\"baitRemove"+i.toString()+"_" +j.toString() + "\"" + " type=\"button\" value=\"Remove\">";          
-        // }
-        // /*ADD BAIT CATEGORY BUTTON*/
-        // categoriesString += "<br><br><input onclick=\"addBaitCategory("+i.toString()+",'Test Bait Category','0')\" id=\"baitRemoveAll"+i.toString() + "\"" + " type=\"button\" value=\"Add Category\">";
-        // /*REMOVE ALL BUTTON*/
-        // categoriesString += "<br><br><input onclick=\"removeAll("+i.toString()+")\" id=\"baitRemoveAll"+i.toString() + "\"" + " type=\"button\" value=\"Remove All\">";
-       for (var j = 0; j < jsonCategories["Categories"][i]["item"]["baits"].length; j++){
-
-            categoriesString
-            +=
-
-            "<h4>"
-            +
-            jsonCategories["Categories"][i]["item"]["baits"][j]["baitTitle"]
-            + 
-            "<span id=\"baitQuantity"+i.toString() +"_"+ j.toString() +"\">" + jsonCategories["Categories"][i]["item"]["baits"][j]["baitQuantity"] +   
-            " </span>"
-            +
-            "<input onclick=\"incrementBait('baitQuantity"+i.toString()+"_"+j.toString()+"','"+i.toString()+"','"+j.toString()+"' )\" id=\"baitAdd"+i.toString()+"_" +j.toString() + "\"" + " type=\"button\" value=\"Add\">"
-            +
-            "<input onclick=\"decrementBait('baitQuantity"+i.toString()+"_"+j.toString()+"','"+i.toString()+"','"+j.toString()+"' )\" id=\"baitRemove"+i.toString()+"_" +j.toString() + "\"" + " type=\"button\" value=\"Remove\">"
-            +
-            "</h4>" ;         
+            /*ITEM TITLE AND QUANTITY*/
+            categoriesString +="<span>"+ "<h4>"+jsonCategories["Categories"][i]["item"]["baits"][j]["baitTitle"] + "</h4>" + "<span id=\"baitQuantity"+i.toString() +"_"+ j.toString() +"\">" + jsonCategories["Categories"][i]["item"]["baits"][j]["baitQuantity"] +   " </span>";
+            /*ADD BUTTON*/
+            categoriesString += "<input onclick=\"incrementBait('baitQuantity"+i.toString()+"_"+j.toString()+"','"+i.toString()+"','"+j.toString()+"' )\" id=\"baitAdd"+i.toString()+"_" +j.toString() + "\"" + " type=\"button\" value=\"Add\">";
+            /*REMOVE BUTTON*/
+            categoriesString += "<input onclick=\"decrementBait('baitQuantity"+i.toString()+"_"+j.toString()+"','"+i.toString()+"','"+j.toString()+"' )\" id=\"baitRemove"+i.toString()+"_" +j.toString() + "\"" + " type=\"button\" value=\"Remove\">"+ "</span>";          
         }
-
-        categoriesString
-        +=
-      
-        "<input onclick=\"addBaitCategory("+i.toString()+",'Test Bait Category','0')\" id=\"baitRemoveAll"+i.toString() + "\"" + " type=\"button\" value=\"Add Category\">"
-        +
-        "<input onclick=\"removeAll("+i.toString()+")\" id=\"baitRemoveAll"+i.toString() + "\"" + " type=\"button\" value=\"Remove All\">"
-        +
-        "<br><br><br>"
-        ;
+        /*ADD BAIT CATEGORY BUTTON*/
+        categoriesString += "<br><br><input onclick=\"addBaitCategory("+i.toString()+",'Test Bait Category','0')\" id=\"baitRemoveAll"+i.toString() + "\"" + " type=\"button\" value=\"Add Category\">";
+        /*REMOVE ALL BUTTON*/
+        categoriesString += "<br><br><input onclick=\"removeAll("+i.toString()+")\" id=\"baitRemoveAll"+i.toString() + "\"" + " type=\"button\" value=\"Remove All\">";
         
         $(".categories").html(categoriesString);
     }   
@@ -424,16 +398,11 @@ var leftsecond = parseInt(leftTime/1000);
 
 //var day1=parseInt(leftsecond/(24*60*60*6));
 
-// var day1=Math.floor(leftsecond/(60*60*24)); 
-// var hour=Math.floor((leftsecond-day1*24*60*60)/3600); 
-// var minute=Math.floor((leftsecond-day1*24*60*60-hour*3600)/60); 
-// var second=Math.floor(leftsecond-day1*24*60*60-hour*3600-minute*60); 
-
-var hour=Math.floor(leftsecond/(60*60)); 
-var minute=Math.floor((leftsecond-hour*3600)/60);   
-var second=Math.floor(leftsecond-hour*60*60-minute*60); 
-
-if (hour==0 && minute==0 && second==0) {
+var day1=Math.floor(leftsecond/(60*60*24)); 
+var hour=Math.floor((leftsecond-day1*24*60*60)/3600); 
+var minute=Math.floor((leftsecond-day1*24*60*60-hour*3600)/60); 
+var second=Math.floor(leftsecond-day1*24*60*60-hour*3600-minute*60); 
+if (day1 == 0 && hour==0 && minute==0 && second==0) {
   alert("Time's up!")
   return;
 }
