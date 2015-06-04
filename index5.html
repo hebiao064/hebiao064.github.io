@@ -43,10 +43,9 @@
 */
         // Set chart options
         var options = {'title':'Species In Your Shipment',
-        'width':350,
-        'height':400,
-        'fontSize': 16,
-        'chartArea': {'width': '100%', 'height': '80%'},
+        'width':550,
+        'height':300,
+         'fontSize': 16,
 
         };
         // Instantiate and draw our chart, passing in some options.
@@ -64,8 +63,6 @@
     <!-- Include the jQuery Mobile library -->
     <script src="http://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
     <script type="text/javascript">
-
-
     var jsonCategories = {
         "Categories": [
 
@@ -532,24 +529,21 @@ window.setInterval(function(){ShowCountDown(2015,6,4,23,59,'timer');}, interval)
     <div align="center" class="show" style="background=color:#EBEBEB; height:50px" >
         <p id="intro3" align="center" style="padding:10px">Hi Ross! Here's what I have for you this month. Feel free to add or remove items.</p>
     </div>
-    <br> 
-        <div align="center" class="categories"> <!--All of category data-->
+        <div align="center" class="categories"></div>
+ 
+       <!--  <div align="center" class="categories1"> All of category data
         </div>
-
-        <div align="center" class="categories1"> <!--All of category data-->
-        </div>
-        <!--
+         --><!--
         <div>
         {.section Categories}
           <h1 class="blogTitle">{title}</h1>
           {.end}
         </div>
         -->
-        <br>
-        <div id="chart_div" align="center" style="padding:0px"></div>
+        <div id="chart_div" align="center" style="padding-right:0px"></div>
 
         <div align="left">
-            <p align="left" style="padding:14px">
+            <p align="left" style="padding:30px">
                 <font size="4" face="Arial">
                     <strong>Add species...
                     </strong>
@@ -608,15 +602,15 @@ window.setInterval(function(){ShowCountDown(2015,6,4,23,59,'timer');}, interval)
         <div>
             <p align="center" style="padding:10px;">
                 <span>
-                    -Free return shipping on all items in this shipment.
+                    -Free return shipping on all items
                     <br>
-                    -Save up to 25% on all items in this shipment.
+                    -20% off next shipment
                 </span>
             </p>
 
             <input type="button" value="Confirm Shipment" style="background-color:#3498db;">
 
-            <div align="center" class='shipment-timer'>
+            <div align="center" class='shipment-timer' data-theme="f">
 <!--                 <p style="font-family: Arial; font-size: 24px;"><span style="color: rgb(0, 0, 0);"><span style="font-weight: bold;">24hrs 37m</span> to confirm</span></p> -->
 <!--             <div id='timer' style="font-family: Arial; font-size: 24px;">
             </div> -->
