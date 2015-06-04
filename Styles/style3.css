@@ -37,8 +37,8 @@ font-family: Arial;
 
 /*Category Quantity*/
 #totalQuantity0{
-display: inline;
 margin-top: 5px;
+display: inline;
 left: 330px;
 /*padding-top: 255px;*/
 color: white;
@@ -46,10 +46,7 @@ border-top-width: 0px;
 border-bottom-width: 0px;
 border-left-width: 0px;
 border-right-width: 0px;
-border-top-left-radius: 3px;
-border-top-right-radius: 3px;
-border-bottom-right-radius: 3px;
-border-bottom-left-radius: 3px;
+border-radius: 3px;
 /*border-color: #888;*/
 border-color: #ffffff;
 border-style: solid;
@@ -111,7 +108,6 @@ height: 21px;
 /*display: inline;*/
 /*line-height: 130%;*/
 /*overflow: hidden;*/
-margin-bottom:20px;
 border-style: solid;
 border-width: 0px;
 border-radius: 15px;
@@ -125,7 +121,7 @@ text-align: center;
 position: absolute;
 left: 200px;
 width: 26px;
-height: 24px;
+height: 26px;
 opacity: 1;
 background-color: rgb(92, 97, 102);
 /*background-position: 0% 0%;*/
@@ -135,16 +131,16 @@ background-color: rgb(92, 97, 102);
 #baitAdd0_0, #baitAdd0_1, #baitAdd0_2, #baitAdd0_3, #baitAdd0_4, #baitAdd0_5,
 #baitAdd1_0, #baitAdd1_1, #baitAdd1_2, #baitAdd1_3, #baitAdd1_4, #baitAdd1_5{
 display: inline;
-left: 220px;
-text-align: center;
-position: relative;
+right:68px;
+text-align: right;
+position: absolute;
 }
 
 #baitRemove0_0, #baitRemove0_1, #baitRemove0_2, #baitRemove0_3, #baitRemove0_4, #baitRemove0_5,
 #baitRemove1_0, #baitRemove1_1, #baitRemove1_2, #baitRemove1_3, #baitRemove1_4, #baitRemove1_5{
 display: inline;
-position: relative;
-left: 230px;
+position: absolute;
+right: 0px;
 text-align: center;
 }
 
@@ -153,12 +149,13 @@ text-align: center;
 display: block;
 left: 14px;
 position: relative;
-padding-bottom: 20px;
+padding-bottom: 30px;
+float:left;
 }
 
 /*Category Title*/
 h2{
-padding-left: 14px;
+padding-left: 16px;
 display: inline;
 /*top: 100px;
 bottom: 100px;*/
@@ -169,7 +166,7 @@ bottom: 100px;*/
 h4{
 padding-left: 14px;
 font-style: normal;
-line-height: normal;
+line-height: 25px;
 font-weight: normal;
 font-family: Arial;
 color: black;
@@ -177,7 +174,9 @@ font-size: 18px;
 border-bottom-style: solid;
 border-bottom-color: rgb(92, 97, 102);
 border-bottom-width: 1px;
+padding-bottom: 5px;
 position: relative;
+margin:12px;
 }
 
 /*Description*/
