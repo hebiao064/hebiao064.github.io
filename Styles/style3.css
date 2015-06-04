@@ -182,7 +182,7 @@ word-wrap: break-word;
 #baitAdd1_0, #baitAdd1_1, #baitAdd1_2, #baitAdd1_3, #baitAdd1_4, #baitAdd1_5{
 display: inline;
 right:50px;
-text-align: center;
+text-align: left;
 position: absolute;
 border-top-left-radius:5px;
 border-bottom-left-radius:5px;
