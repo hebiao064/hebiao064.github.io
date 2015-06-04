@@ -127,8 +127,39 @@ background-color: rgb(92, 97, 102);
 /*background-position: 0% 0%;*/
 }
 
+/*Add & Remove Buttons*/
+#baitAdd0_0, #baitAdd0_1, #baitAdd0_2, #baitAdd0_3, #baitAdd0_4, #baitAdd0_5,
+#baitAdd1_0, #baitAdd1_1, #baitAdd1_2, #baitAdd1_3, #baitAdd1_4, #baitAdd1_5{
+display: inline;
+right:35px;
+text-align: right;
+position: absolute;
+border-top-left-radius:7px;
+border-bottom-left-radius:7px;
+height:25px;
+width:40px;
+background-color: white;
+box-shadow: none;
+border: solid 1px #5c5c5c;
+color:#5c5c5c;
+font-size: 20px;
+}
 
-
+#baitRemove0_0, #baitRemove0_1, #baitRemove0_2, #baitRemove0_3, #baitRemove0_4, #baitRemove0_5,
+#baitRemove1_0, #baitRemove1_1, #baitRemove1_2, #baitRemove1_3, #baitRemove1_4, #baitRemove1_5{
+display: inline;
+position: absolute;
+right: 0px;
+text-align: left;
+border-top-right-radius:7px;
+border-bottom-right-radius:7px;
+height:25px;
+width:40px;
+background-color: white;
+border: solid 1px #5c5c5c;
+color:#5c5c5c;
+font-size: 20px;
+}
 
 /*Add Category & Remove All*/
 #baitRemoveAll0, #baitRemoveAll1{
@@ -158,11 +189,11 @@ font-family: Arial;
 color: black;
 font-size: 18px;
 border-bottom-style: solid;
-border-bottom-color: rgb(92, 97, 102);
+border-bottom-color: #5b5b5b;
 border-bottom-width: 1px;
-padding-bottom: 5px;
 position: relative;
 margin:12px;
+
 }
 
 /*Description*/
@@ -175,32 +206,4 @@ font-family: Arial;
 color: black;
 font-size: 14px;
 word-wrap: break-word;	
-}
-
-/*Add & Remove Buttons*/
-#baitAdd0_0, #baitAdd0_1, #baitAdd0_2, #baitAdd0_3, #baitAdd0_4, #baitAdd0_5,
-#baitAdd1_0, #baitAdd1_1, #baitAdd1_2, #baitAdd1_3, #baitAdd1_4, #baitAdd1_5{
-display: inline;
-right:50px;
-text-align: left;
-position: absolute;
-border-top-left-radius:5px;
-border-bottom-left-radius:5px;
-height:25px;
-width:40px;
-background-color: white;
-}
-
-#baitRemove0_0, #baitRemove0_1, #baitRemove0_2, #baitRemove0_3, #baitRemove0_4, #baitRemove0_5,
-#baitRemove1_0, #baitRemove1_1, #baitRemove1_2, #baitRemove1_3, #baitRemove1_4, #baitRemove1_5{
-display: inline;
-position: absolute;
-right: 0px;
-text-align: center;
-border-top-right-radius:7px;
-border-bottom-right-radius:7px;
-height:25px;
-width:40px;
-background-color: white;
-
 }

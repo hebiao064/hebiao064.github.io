@@ -143,9 +143,9 @@ for (var j = 0; j < jsonCategories["Categories"][i]["item"]["baits"].length; j++
             "<span id=\"baitQuantity"+i.toString() +"_"+ j.toString() +"\">" + jsonCategories["Categories"][i]["item"]["baits"][j]["baitQuantity"] +   
             " </span>"
             +
-            "<input onclick=\"incrementBait('baitQuantity"+i.toString()+"_"+j.toString()+"','"+i.toString()+"','"+j.toString()+"' )\" id=\"baitAdd"+i.toString()+"_" +j.toString() + "\"" + " type=\"button\" value=\"+\">"
+            "<input onclick=\"incrementBait('baitQuantity"+i.toString()+"_"+j.toString()+"','"+i.toString()+"','"+j.toString()+"' )\" id=\"baitAdd"+i.toString()+"_" +j.toString() + "\"" + " type=\"button\" value=\"Add\">"
             +
-            "<input onclick=\"decrementBait('baitQuantity"+i.toString()+"_"+j.toString()+"','"+i.toString()+"','"+j.toString()+"' )\" id=\"baitRemove"+i.toString()+"_" +j.toString() + "\"" + " type=\"button\" value=\"-\">"
+            "<input onclick=\"decrementBait('baitQuantity"+i.toString()+"_"+j.toString()+"','"+i.toString()+"','"+j.toString()+"' )\" id=\"baitRemove"+i.toString()+"_" +j.toString() + "\"" + " type=\"button\" value=\"Remove\">"
             +
             "</h4>" ;         
         }
@@ -509,7 +509,7 @@ window.setInterval(function(){ShowCountDown(2015,6,4,23,59,'timer');}, interval)
 <body>
     <div data-role="page" id="pageone" style="background-color:#FFFFFF">
         <div align="center" class="confirmation">
-            <img src="images/logo.png" width="414" alt="broken"> <!--logo-->
+            <img src="images/logo.png" width="320" alt="broken"> <!--logo-->
         </div>
 
     <!--<div data-role="header">
@@ -524,11 +524,9 @@ window.setInterval(function(){ShowCountDown(2015,6,4,23,59,'timer');}, interval)
     <div data-role="main" class="ui-content">
             <h3 id="intro1" align="center">Preview your next shipment</h3>
             <p id="intro2" align="center">You have 48 hours to make changes before we ship your package.</p>
-    </div>
-    <div align="center" class="show" style="background=color:#EBEBEB; height:50px" >
-        <p id="intro3" align="center" style="padding:10px">Hi Ross! Here's what I have for you this month. Feel free to add or remove items.</p>
-    </div>
-    <br> 
+            <p id="intro3" align="center">Hi Ross! Here's what I have for you this month. Feel free to add or remove items.</p>
+        </div>
+       
         <div align="center" class="categories"> <!--All of category data-->
         </div>
 
