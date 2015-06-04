@@ -39,7 +39,7 @@ font-family: Arial;
 #totalQuantity0{
 margin-top: 5px;
 display: inline;
-left: 330px;
+right: 15px;
 /*padding-top: 255px;*/
 color: white;
 border-top-width: 0px;
@@ -69,7 +69,7 @@ height: 21px;
 }
 
 #totalQuantity1{
-left: 330px;
+right: 15px;
 margin-top: 5px;
 display: inline;
 color: white;
@@ -113,15 +113,15 @@ border-width: 0px;
 border-radius: 15px;
 color: transparent;
 /*color: rgb(255, 255, 255);*/
-font-size: 14px;
+font-size: 20px;
 font-family: Arial;
 font-style: normal;
 font-weight: normal;
 text-align: center;
 position: absolute;
 left: 200px;
-width: 26px;
-height: 26px;
+width: 30px;
+height: 30px;
 opacity: 1;
 background-color: rgb(92, 97, 102);
 /*background-position: 0% 0%;*/
@@ -131,7 +131,7 @@ background-color: rgb(92, 97, 102);
 #baitAdd0_0, #baitAdd0_1, #baitAdd0_2, #baitAdd0_3, #baitAdd0_4, #baitAdd0_5,
 #baitAdd1_0, #baitAdd1_1, #baitAdd1_2, #baitAdd1_3, #baitAdd1_4, #baitAdd1_5{
 display: inline;
-right:45px;
+right:35px;
 text-align: center;
 position: absolute;
 border-top-left-radius:7px;
@@ -142,6 +142,8 @@ background-color: white;
 box-shadow: none;
 border: solid 1px #5c5c5c;
 color:#5c5c5c;
+width: 30px;
+height: 30px;
 font-size: 20px;
 }
 
@@ -159,6 +161,8 @@ background-color: white;
 border: solid 1px #5c5c5c;
 color:#5c5c5c;
 font-size: 20px;
+width: 30px;
+height: 30px;
 }
 
 /*Add Category & Remove All*/
@@ -182,6 +186,7 @@ bottom: 100px;*/
 /*Item Title*/
 h4{
 padding-left: 14px;
+padding-bottom: 10px;
 font-style: normal;
 line-height: 27px;
 font-weight: normal;
