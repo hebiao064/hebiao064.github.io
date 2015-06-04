@@ -180,7 +180,8 @@ word-wrap: break-word;
 /*Add & Remove Buttons*/
 #baitAdd0_0, #baitAdd0_1, #baitAdd0_2, #baitAdd0_3, #baitAdd0_4, #baitAdd0_5,
 #baitAdd1_0, #baitAdd1_1, #baitAdd1_2, #baitAdd1_3, #baitAdd1_4, #baitAdd1_5{
-right:35px;
+display: inline;
+right:50px;
 text-align: center;
 position: absolute;
 border-top-left-radius:7px;
