@@ -212,7 +212,12 @@ color: black;
 font-size: 14px;
 word-wrap: break-word;	
 }
-
+#confirmButton{
+color: #FF0000;
+font-size: 20px;
+width: 300px;
+color: transparent;
+}
 .ui-btn { 
    margin:auto;
    width:300px;
