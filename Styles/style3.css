@@ -54,7 +54,7 @@ background-color: #5bbd72;
 background-size: auto;
 /*background-position: center center;*/
 color: transparent;
-font-size: 16px;
+font-size: 23px;
 /*font-weight: bold;*/
 /*font-style: normal;*/
 font-family: Arial;
@@ -64,8 +64,8 @@ padding-right: 0px;
 padding-bottom: 0px;
 padding-left: 0px;
 position: absolute;
-width: 36px;
-height: 21px;
+width: 40px;
+height: 30px;
 }
 
 #totalQuantity1{
@@ -88,7 +88,7 @@ background-color: #5bbd72;
 background-size: auto;
 background-position: center center;
 color: transparent;
-font-size: 16px;
+font-size: 23px;
 /*font-weight: bold;*/
 /*font-style: normal;*/
 font-family: Arial;
@@ -98,8 +98,8 @@ padding-right: 0px;
 padding-bottom: 0px;
 padding-left: 0px;
 position: absolute;
-width: 36px;
-height: 21px;
+width: 40px;
+height: 30px;
 }
 
 /*Item Quantity*/
