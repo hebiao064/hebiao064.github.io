@@ -181,6 +181,7 @@ display: inline;
 /*top: 100px;
 bottom: 100px;*/
 /*position: relative;*/
+font-family: Arial;
 }
 
 /*Item Title*/
@@ -210,8 +211,14 @@ font-weight: normal;
 font-family: Arial;
 color: black;
 font-size: 14px;
-word-wrap: break-word;	
+word-wrap: break-word;  
 }
+
+#chart_div{
+/*width: 500px;
+height: 500px;*/
+}
+
 #confirmButton{
 color: #FF0000;
 font-size: 20px;
@@ -231,5 +238,3 @@ color: transparent;
    /*-ms-filter: "progid:DXImageTransform.Microsoft.gradient(startColorStr='#ffffff', EndColorStr='#ffffff')"; */
    -ms-filter: "progid:DXImageTransform.Microsoft.gradient(startColorStr='#3498db', EndColorStr=#3498db')";
 }
-
-
