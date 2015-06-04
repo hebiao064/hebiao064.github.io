@@ -102,9 +102,44 @@ width: 40px;
 height: 30px;
 }
 
+#totalQuantity2{
+right: 15px;
+margin-top: 5px;
+display: inline;
+color: white;
+border-top-width: 0px;
+border-bottom-width: 0px;
+border-left-width: 0px;
+border-right-width: 0px;
+border-top-left-radius: 3px;
+border-top-right-radius: 3px;
+border-bottom-right-radius: 3px;
+border-bottom-left-radius: 3px;
+/*border-color: #888;*/
+border-color: #ffffff;
+border-style: solid;
+background-color: #5bbd72;
+background-size: auto;
+background-position: center center;
+color: transparent;
+font-size: 23px;
+/*font-weight: bold;*/
+/*font-style: normal;*/
+font-family: Arial;
+text-align: center;
+padding-top: 0px;
+padding-right: 0px;
+padding-bottom: 0px;
+padding-left: 0px;
+position: absolute;
+width: 40px;
+height: 30px;
+}
+
 /*Item Quantity*/
 #baitQuantity0_0, #baitQuantity0_1, #baitQuantity0_2, #baitQuantity0_3, #baitQuantity0_4, #baitQuantity0_5, 
-#baitQuantity1_0, #baitQuantity1_1, #baitQuantity1_2, #baitQuantity1_3, #baitQuantity1_4, #baitQuantity1_5{
+#baitQuantity1_0, #baitQuantity1_1, #baitQuantity1_2, #baitQuantity1_3, #baitQuantity1_4, #baitQuantity1_5,
+#baitQuantity2_0, #baitQuantity2_1, #baitQuantity2_2, #baitQuantity2_3, #baitQuantity2_4, #baitQuantity2_5{
 /*display: inline;*/
 /*line-height: 130%;*/
 /*overflow: hidden;*/
@@ -129,7 +164,8 @@ background-color: rgb(92, 97, 102);
 
 /*Add & Remove Buttons*/
 #baitAdd0_0, #baitAdd0_1, #baitAdd0_2, #baitAdd0_3, #baitAdd0_4, #baitAdd0_5,
-#baitAdd1_0, #baitAdd1_1, #baitAdd1_2, #baitAdd1_3, #baitAdd1_4, #baitAdd1_5{
+#baitAdd1_0, #baitAdd1_1, #baitAdd1_2, #baitAdd1_3, #baitAdd1_4, #baitAdd1_5,
+#baitAdd2_0, #baitAdd2_1, #baitAdd2_2, #baitAdd2_3, #baitAdd2_4, #baitAdd2_5{
 display: inline;
 right:45px;
 text-align: center;
@@ -148,7 +184,8 @@ font-size: 20px;
 }
 
 #baitRemove0_0, #baitRemove0_1, #baitRemove0_2, #baitRemove0_3, #baitRemove0_4, #baitRemove0_5,
-#baitRemove1_0, #baitRemove1_1, #baitRemove1_2, #baitRemove1_3, #baitRemove1_4, #baitRemove1_5{
+#baitRemove1_0, #baitRemove1_1, #baitRemove1_2, #baitRemove1_3, #baitRemove1_4, #baitRemove1_5,
+#baitRemove2_0, #baitRemove2_1, #baitRemove2_2, #baitRemove2_3, #baitRemove2_4, #baitRemove2_5{
 display: inline;
 position: absolute;
 right: 0px;
@@ -166,7 +203,7 @@ height: 30px;
 }
 
 /*Add Category & Remove All*/
-#baitRemoveAll0, #baitRemoveAll1{
+#baitRemoveAll0, #baitRemoveAll1, #baitRemoveAll2{
 display: block;
 left: 14px;
 position: relative;
@@ -211,7 +248,7 @@ font-weight: normal;
 font-family: Arial;
 color: black;
 font-size: 14px;
-word-wrap: break-word;  
+word-wrap: break-word;	
 }
 
 #chart_div{
@@ -220,7 +257,7 @@ height: 500px;*/
 }
 
 #confirmButton{
-color: #FF0000;
+background-color: #3498db;
 font-size: 20px;
 width: 300px;
 color: transparent;
