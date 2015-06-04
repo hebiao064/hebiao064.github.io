@@ -654,7 +654,9 @@ window.setInterval(function(){ShowCountDown(2015,6,4,23,59,'timer');}, interval)
           console.log("hello");
           var tmp = parseInt(document.getElementById("totalQuantity0").innerHTML);
           var tmp2 = parseInt(document.getElementById("totalQuantity1").innerHTML);
-          var count = tmp + tmp2;
+          var tmp3 = parseInt(document.getElementById("totalQuantity2").innerHTML);
+
+          var count = tmp + tmp2 + tmp3;
           var moneymin = count*5;
           var moneymax = count*10;
           document.getElementById("showcount").innerHTML = count;
@@ -705,7 +707,8 @@ function testfunc(){
   console.log("hello");
   var tmp = parseInt(document.getElementById("totalQuantity0").innerHTML);
   var tmp2 = parseInt(document.getElementById("totalQuantity1").innerHTML);
-  var count = tmp + tmp2;
+  var tmp3 = parseInt(document.getElementById("totalQuantity2").innerHTML);
+  var count = tmp + tmp2 + tmp3;
   var moneymin = count*5;
   var moneymax = count*10;
   document.getElementById("showcount").innerHTML = count;
