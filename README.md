@@ -14,7 +14,7 @@ gem install bundler -v 2.0.2
 # Install dependencies
 bundle _2.0.2_ install
 
-# Run Jekyll
+# Run Jekyll to start the server locally
 bundle _2.0.2_ exec jekyll serve
 ```
 
