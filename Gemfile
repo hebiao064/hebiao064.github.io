@@ -7,4 +7,8 @@ gem 'html-proofer'
 gem 'tzinfo'
 gem 'tzinfo-data'
 gem 'jekyll-remote-theme'
+gem 'jekyll', '~> 3.9.0'
+gem 'jekyll-sitemap'
+gem 'html-proofer'
+gem 'kramdown-parser-gfm'
 
