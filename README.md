@@ -8,6 +8,13 @@
 ### On GitHub Pages
 
 ```bash
+# Install the specific bundler version
+gem install bundler -v 2.0.2
+
+# Install dependencies
+bundle _2.0.2_ install
+
+# Run Jekyll
 bundle _2.0.2_ exec jekyll serve
 ```
 
@@ -15,7 +22,6 @@ bundle _2.0.2_ exec jekyll serve
 
 ```bash
 git push
-
 # git push is enough, a Github CI will trigger the page build
 ```
 

@@ -6,7 +6,7 @@ logo_url:           https://avatars.githubusercontent.com/u/11166516?v=4 # Get i
 
 # Site Settings
 url:                https://hebiao064.github.io # main url
-baseurl:            /the-plain
+baseurl:            ""
 permalink:          /:title # Post permalink
 timezone:           America/Los_Angeles # https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
 mathjax:            true  # enables support for mathjax - set to 'false' to disable
@@ -25,7 +25,9 @@ include:            [ "robots.txt" ]
 exclude:            [ "LICENSE", "README.md", "CNAME", "vendor", "Gemfile", "script" ]
 plugins:
   - jekyll-sitemap
+  - jekyll-remote-theme
 
+remote_theme: heiswayi/the-plain
 
 
 defaults:
@@ -45,7 +47,3 @@ defaults:
     values:
       layout:       "post"
 
-plugins:
-  - jekyll-remote-theme
-
-remote_theme: heiswayi/the-plain
