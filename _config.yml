@@ -44,3 +44,8 @@ defaults:
       type:         "posts"
     values:
       layout:       "post"
+
+plugins:
+  - jekyll-remote-theme
+
+remote_theme: heiswayi/the-plain
