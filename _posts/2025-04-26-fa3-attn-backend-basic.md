@@ -16,8 +16,8 @@ Share the current status of FA3 backend in SGLang which has been turned on as de
 ### Table of Contents for the series
 
 - **Part 1:** Basic Implementation, Paged KV Cache and CUDA Graph Support
-- **Part 2:** Speculative Decoding Support
-- **Part 3:** MLA, LLama4, Sliding Window and Multimodal Support
+- **Part 2:** Speculative Decoding Support (coming soon)
+- **Part 3:** MLA, LLama4, Sliding Window and Multimodal Support (coming soon)
 
 
 <div class="divider"></div>
