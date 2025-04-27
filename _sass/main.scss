@@ -224,12 +224,39 @@ iframe {
   width: 100%;
 }
 article {
-  max-width: 90%;
+  max-width: 100%;
   margin: 0 auto;
+  
+  @media (min-width: 768px) {
+    max-width: 80%;
+  }
+  
   h1.title {
     line-height: 1.4em;
     text-align: center;
     font-size: 1.4em;
+  }
+  h1, h2 {
+    position: relative;
+    
+    &:hover:before {
+      content: "#";
+      position: absolute;
+      left: -1.5rem;
+      color: #999;
+      font-size: 1.5rem;
+      font-weight: normal;
+    }
+    
+    a {
+      color: inherit;
+      border-bottom: none;
+      
+      &:hover {
+        color: inherit;
+        border-bottom: none;
+      }
+    }
   }
   .subtitle {
     font-weight: 300; 
