@@ -224,12 +224,19 @@ iframe {
   width: 100%;
 }
 article {
-  max-width: 500px;
+  max-width: 80%;
   margin: 0 auto;
   h1.title {
     line-height: 1.4em;
     text-align: center;
     font-size: 1.4em;
+  }
+  .subtitle {
+    font-weight: 300; 
+    margin-top: -15px; 
+    margin-bottom: 30px; 
+    color: #8c8c8c;
+    font-size: 1.2em;
   }
   .divider {
     background: #ddd;
