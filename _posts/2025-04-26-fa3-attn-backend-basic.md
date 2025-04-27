@@ -3,10 +3,45 @@ title: \[Draft\] Implement FlashAttention3 Backend in SGLang [Part 1]
 updated: 2025-04-26 11:11
 ---
 
-<div class="subtitle">FlashAttention3 is a highly optimized attention mechanism for large language models. SGLang now adopted our work as the default backend for all mainstream LLM models like Llama, QWen, Deepseek, Gemma, etc.</div>
 
+
+<div class="authors-section" style="display: flex; justify-content: center; margin: 40px 0; gap: 40px;">
+  <div style="margin: 0 0 5px 0; font-size: 18px; font-weight: 500;"><p>Authored by</p></div>
+  <!-- Author 1 -->
+  <div class="author-card" style="display: flex; flex-direction: column; align-items: center; max-width: 200px; text-align: center;">
+    <h3 style="margin: 0 0 5px 0; font-size: 18px; font-weight: 500;">Biao He</h3>
+    <div class="author-social" style="display: flex; gap: 12px; margin-top: 5px;">
+      <a href="https://www.linkedin.com/in/biao-he/" target="_blank" style="text-decoration: none; border: none;">
+        <img src="https://cdn.jsdelivr.net/npm/simple-icons@v8/icons/linkedin.svg" alt="LinkedIn" style="width: 18px; height: 18px; filter: invert(30%);">
+      </a>
+      <a href="https://x.com/hebiao064" target="_blank" style="text-decoration: none; border: none;">
+        <img src="https://www.svgrepo.com/show/47722/twitter-black-shape.svg" alt="X" style="width: 18px; height: 18px; filter: invert(30%);">
+      </a>
+      <a href="https://github.com/hebiao064" target="_blank" style="text-decoration: none; border: none;">
+        <img src="https://cdn.jsdelivr.net/npm/simple-icons@v8/icons/github.svg" alt="GitHub" style="width: 18px; height: 18px; filter: invert(30%);">
+      </a>
+    </div>
+  </div>
+
+  <!-- Author 2 -->
+  <div class="author-card" style="display: flex; flex-direction: column; align-items: center; max-width: 200px; text-align: center;">
+    <h3 style="margin: 0 0 5px 0; font-size: 18px; font-weight: 500;">Qingquan Song</h3>
+    <div class="author-social" style="display: flex; gap: 12px; margin-top: 5px;">
+      <a href="https://www.linkedin.com/in/qingquan-song-b71167119/" target="_blank" style="text-decoration: none; border: none;">
+        <img src="https://cdn.jsdelivr.net/npm/simple-icons@v8/icons/linkedin.svg" alt="LinkedIn" style="width: 18px; height: 18px; filter: invert(30%);">
+      </a>
+      <a href="https://x.com/qingquan_song" target="_blank" style="text-decoration: none; border: none;">
+        <img src="https://www.svgrepo.com/show/47722/twitter-black-shape.svg" alt="X" style="width: 18px; height: 18px; filter: invert(30%);">
+      </a>
+      <a href="https://github.com/qingquansong" target="_blank" style="text-decoration: none; border: none;">
+        <img src="https://cdn.jsdelivr.net/npm/simple-icons@v8/icons/github.svg" alt="GitHub" style="width: 18px; height: 18px; filter: invert(30%);">
+      </a>
+    </div>
+  </div>
+</div>
 
 <div class="divider"></div>
+
 
 ## 0x0. Introduction
 
