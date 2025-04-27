@@ -62,11 +62,12 @@ Share the current status of FA3 backend in SGLang which has been turned on as de
 ### What is Flash Attention?
 **Flash Attention**[^1] is an IO-aware exact attention algorithm that uses tiling to reduce the number of memory reads/writes between GPU high bandwidth memory (HBM) and GPU on-chip SRAM.
 
+![Flash Attention](/assets/fa3-basics/fa-classic.png)
 It has been widely used in LLM inference and training, and is the default attention backend in modern serving engines like SGLang, vLLM, etc.
 
 In most cases, it's fine to treat it as a black box. However, by understanding its core logic, we can use it more intelligently. 
 
-I highly recommend this article[^2] to understand the core logic of Flash Attention. And I also have a [blog post](https://hebiao064.github.io/fa3-attn-backend-basic) on Flash Attention, where I give a brief introduction on the algorithm.
+I highly recommend this article[^2] to understand the core logic of Flash Attention. And I also have a [**blog post**](https://hebiao064.github.io/fa3-attn-backend-basic) on Flash Attention, where I gave a brief introduction from code level.
 
 
 ### How Attention Backend works in SGLang
