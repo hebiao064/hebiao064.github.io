@@ -45,19 +45,42 @@ updated: 2025-04-26 11:11
 
 ## 0x0. Introduction
 
-### Brief Introduction on FA3 Backend in SGLang
-Share the current status of FA3 backend in SGLang which has been turned on as default in the latest release.
+In the past few weeks, we've implemented the Flash Attention Backend end to end in SGLang, which has been turned on by default attention backend in SGLang [`0.4.5` release](https://github.com/sgl-project/sglang/releases).
 
+![Slack Announcement](/assets/fa3-basics/slack-announcement.png)
+From this journey, we learned a lot about how Attention Backend works in modern LLM serving engines and Flash Attention itself.
+
+We want to go through the implementation in detail and we hope this series can be helpful for anyone who wants to implement a new backend in serving engines.
+
+
+<div class="divider"></div>
 ### Table of Contents for the series
 
-- **Part 1:** Basics, Paged KV Cache and CUDA Graph Support
-- **Part 2:** Speculative Decoding Support (coming soon)
-- **Part 3:** MLA, LLama4, Sliding Window and Multimodal Support (coming soon)
+This series will be split into 3 parts:
+
+* **Part 1:** Basics, Paged KV Cache and CUDA Graph Support (this post)
+* **Part 2:** Speculative Decoding Support (coming soon)
+* **Part 3:** MLA, LLama4, Sliding Window and Multimodal Support (coming soon)
+
+<div class="divider"></div>
+### Latest Status of Attention Backend in SGLang
+
+| **Backend**              | **Page Size > 1** | **Spec Decoding** | **MLA** | **Local Attention (Llama4) ** | **MultiModal** | **FP8** |
+|--------------------------|-------------------|-------------------|--------|--------------------|------------|--------|
+| **FlashAttention**                  | ✅                | ✅ (Top K >= 1)              | ✅     | ✅                 | ✅ | ✅ |
+| FlashInfer | ✅                | ✅ (Top K >= 1 for non-MLA)                | ✅     | ❌                 | ✅ | ❌ |
+| Triton               | ❌                | ✅                | ✅     | ❌                 | ❌ | ❌ |
+| Torch Native         | ❌                | ❌                | ❌     | ❌                 | ❌ | ❌ |
+
+
+### Benchmark Results
+
+To be added.
 
 
 <div class="divider"></div>
 
-## 0x1. Background
+## 0x1. Background and Motivation
 
 ### What is Flash Attention?
 **Flash Attention**[^1] is an IO-aware exact attention algorithm that uses tiling to reduce the number of memory reads/writes between GPU high bandwidth memory (HBM) and GPU on-chip SRAM.
@@ -67,10 +90,22 @@ It has been widely used in LLM inference and training, and is the default attent
 
 In most cases, it's fine to treat it as a black box. However, by understanding its core logic, we can use it more intelligently. 
 
-I highly recommend this article[^2] to understand the core logic of Flash Attention. And I also have a [**blog post**](https://hebiao064.github.io/fa3-attn-backend-basic) on Flash Attention, where I gave a brief introduction from code level.
+I highly recommend this article[^2] to understand the core logic of Flash Attention. And I also have a [**blog post**](https://hebiao064.github.io/flash-attn) on Flash Attention, where I gave a brief introduction from code level.
 
 
 ### How Attention Backend works in SGLang
+
+![SGLang Architecture](/assets/fa3-basics/sglang-architecture.svg)
+
+
+SGLang, as a modern LLM Serving Engine, has three major components (in logical view):
+- **Server Components:** Responsible for handling the incoming requests and sending responses.
+- **Scheduler Components:** Responsible for construct batches and send to Worker.
+- **Model Components:** Responsible for the model inference using attention backends. **The major model forward pass acceleration comes from the Attention Backend.**
+
+
+
+
 
 ### How KV Cache Allocator works in SGLang
 
