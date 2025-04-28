@@ -82,7 +82,7 @@ This series will be split into 3 parts:
       <tr class="highlight-row">
         <td><strong>FlashAttention</strong></td>
         <td><span class="check">✅</span></td>
-        <td><span class="check">✅</span> <small>(Top K >= 1)</small></td>
+        <td><span class="check">✅</span></td>
         <td><span class="check">✅</span></td>
         <td><span class="check">✅</span></td>
         <td><span class="check">✅</span></td>
@@ -91,7 +91,7 @@ This series will be split into 3 parts:
       <tr>
         <td>FlashInfer</td>
         <td><span class="check">✅</span></td>
-        <td><span class="check">✅</span> <small>(Top K >= 1 for non-MLA)</small></td>
+        <td><span class="check">✅</span> </td>
         <td><span class="check">✅</span></td>
         <td><span class="cross">❌</span></td>
         <td><span class="check">✅</span></td>

@@ -208,7 +208,7 @@ pre {
 table {
   width: 100%;
   table-layout: fixed;
-  margin: 45px 0;
+  margin: 0px 0;
   thead {
     background: #f2f2f2;
   }
@@ -221,9 +221,79 @@ table {
     padding: 4px 0;
   }
 }
-iframe {
-  width: 100%;
+
+/* Custom Feature Table Styling */
+.table-responsive {
+  overflow-x: auto;
+  margin: 10px 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  border-radius: 4px;
 }
+
+.feature-table {
+  width: 100%;
+  border-collapse: collapse;
+  border-spacing: 0;
+  background-color: #fff;
+  font-size: 14px;
+  
+  th, td {
+    padding: 12px 16px;
+    text-align: center;
+    border-bottom: 1px solid #e0e0e0;
+  }
+  
+  th {
+    background-color: #f5f5f5;
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+  }
+  
+  td:first-child,
+  th:first-child {
+    text-align: left;
+    padding-left: 20px;
+  }
+  
+  .highlight-row {
+    background-color: rgba(0, 135, 190, 0.05);
+  }
+  
+  .check {
+    color: #2ecc71;
+    font-size: 18px;
+  }
+  
+  .cross {
+    color: #e74c3c;
+    font-size: 18px;
+  }
+  
+  small {
+    color: #888;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  
+  @media (max-width: 767px) {
+    font-size: 13px;
+    
+    th, td {
+      padding: 8px 10px;
+    }
+    
+    small {
+      display: block;
+      line-height: 1.4;
+    }
+    
+    .check, .cross {
+      font-size: 16px;
+    }
+  }
+}
+
 article {
   max-width: 100%;
   margin: 0 auto;
