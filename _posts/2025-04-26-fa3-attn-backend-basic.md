@@ -45,7 +45,7 @@ updated: 2025-04-26 11:11
 
 ## 0x0. Introduction
 
-In the past few weeks, we've implemented the Flash Attention Backend end to end in SGLang, which has been turned on by default attention backend in SGLang [`0.4.5` release](https://github.com/sgl-project/sglang/releases).
+In the past few weeks, we've implemented the Flash Attention Backend end to end in SGLang, which has been turned on by default attention backend in SGLang [`0.4.6` release](https://github.com/sgl-project/sglang/releases/tag/v0.4.6).
 
 ![Slack Announcement](/assets/fa3-basics/slack-announcement.png)
 From this journey, we learned a lot about how Attention Backend works in modern LLM serving engines and Flash Attention itself.
