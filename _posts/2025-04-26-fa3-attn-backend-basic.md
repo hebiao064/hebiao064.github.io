@@ -266,7 +266,8 @@ def flash_attn_with_kvcache(
     max_seqlen_q: Optional[int] = None,
     causal=False,
 ):
-Arguments:
+    """
+    Arguments:
         q: (batch_size, seqlen, nheads, headdim)
         k_cache: (batch_size_cache, seqlen_cache, nheads_k, headdim) if there's no page_table,
             or (num_blocks, page_block_size, nheads_k, headdim) if there's a page_table (i.e. paged KV cache)
@@ -325,54 +326,93 @@ class FlashAttentionBackend(AttentionBackend):
 ### Init Forward Metadata
 ```python
 def init_forward_metadata(self, forward_batch: ForwardBatch):
-        """Initialize forward metadata during model forward and reused across layers forward
-        
-        Args:
-            forward_batch: `ForwardBatch` object, contains the forward batch information like forward_mode, batch_size, req_pool_indices, seq_lens, out_cache_loc 
-        """
-        # Initialize metadata
-        metadata = FlashAttentionMetadata()
-        # Get batch size
-        batch_size = forward_batch.batch_size
-        # Get original sequence lengths in batch
-        seqlens_in_batch = forward_batch.seq_lens
-        # Get device of the model, e.g: cuda
-        device = seqlens_in_batch.device
+    """Initialize forward metadata during model forward and reused across layers forward
+    
+    Args:
+        forward_batch: `ForwardBatch` object, contains the forward batch information like forward_mode, batch_size, req_pool_indices, seq_lens, out_cache_loc 
+    """
+    # Initialize metadata
+    metadata = FlashAttentionMetadata()
+    # Get batch size
+    batch_size = forward_batch.batch_size
+    # Get original sequence lengths in batch
+    seqlens_in_batch = forward_batch.seq_lens
+    # Get device of the model, e.g: cuda
+    device = seqlens_in_batch.device
+    # Get sequence lengths in int32
+    metadata.cache_seqlens_int32 = seqlens_in_batch.to(torch.int32)
+    
+    # Get max sequence length for key
+    # Note that we use seq_lens_cpu to skip a device sync
+    # See PR: https://github.com/sgl-project/sglang/pull/4745
+    metadata.max_seq_len_k = forward_batch.seq_lens_cpu.max().item()
+    # Get cumulative sequence lengths for key
+    metadata.cu_seqlens_k = torch.nn.functional.pad(
+        torch.cumsum(seqlens_in_batch, dim=0, dtype=torch.int32), (1, 0)
+    )
+    # Get page table, we cutoff by the max sequence length
+    metadata.page_table = forward_batch.req_to_token_pool.req_to_token[
+        forward_batch.req_pool_indices, : metadata.max_seq_len_k
+    ]
+
+    if forward_batch.forward_mode == ForwardMode.EXTEND:
         # Get sequence lengths in int32
-        metadata.cache_seqlens_int32 = seqlens_in_batch.to(torch.int32)
-        
-        # Get max sequence length for key
-        # Note that we use seq_lens_cpu to skip a device sync
-        # See PR: https://github.com/sgl-project/sglang/pull/4745
-        metadata.max_seq_len_k = forward_batch.seq_lens_cpu.max().item()
-        # Get cumulative sequence lengths for key
-        metadata.cu_seqlens_k = torch.nn.functional.pad(
-            torch.cumsum(seqlens_in_batch, dim=0, dtype=torch.int32), (1, 0)
+        metadata.max_seq_len_q = max(forward_batch.extend_seq_lens_cpu)
+        metadata.cu_seqlens_q = torch.nn.functional.pad(
+            torch.cumsum(forward_batch.extend_seq_lens, dim=0, dtype=torch.int32), (1, 0)
         )
-        # Get page table, we cutoff by the max sequence length
-        metadata.page_table = forward_batch.req_to_token_pool.req_to_token[
-            forward_batch.req_pool_indices, : metadata.max_seq_len_k
-        ]
+    elif forward_batch.forward_mode == ForwardMode.DECODE:
+        # For decoding, query length is always 1
+        metadata.max_seq_len_q = 1
+            # Get cumulative sequence lengths for query
+        metadata.cu_seqlens_q = torch.arange(
+            0, batch_size + 1, dtype=torch.int32, device=device
+        )
 
-        if forward_batch.forward_mode == ForwardMode.EXTEND:
-            # Get sequence lengths in int32
-            metadata.max_seq_len_q = max(forward_batch.extend_seq_lens_cpu)
-            metadata.cu_seqlens_q = torch.nn.functional.pad(
-                torch.cumsum(forward_batch.extend_seq_lens, dim=0, dtype=torch.int32), (1, 0)
-            )
-        elif forward_batch.forward_mode == ForwardMode.DECODE:
-            # For decoding, query length is always 1
-            metadata.max_seq_len_q = 1
-             # Get cumulative sequence lengths for query
-            metadata.cu_seqlens_q = torch.arange(
-                0, batch_size + 1, dtype=torch.int32, device=device
-            )
-
-        # Save metadata, hence forward_extend and forward_decode could reuse it
-        self.forward_metadata = metadata
+    # Save metadata, hence forward_extend and forward_decode could reuse it
+    self.forward_metadata = metadata
 ```
 
+### Forward Extend
 
+In model forward, `model_runner` will call `init_forward_metadata` to initialize the metadata for the attention backend and then call the actual `forward_extend` and `forward_decode`. Hence the implementation of `forward_extend` and `forward_decode` is straightforward, we will just share the `forward_extend` code.
+
+```python
+def forward_extend(
+    self,
+    q: torch.Tensor,
+    k: torch.Tensor,
+    v: torch.Tensor,
+    layer: RadixAttention,
+    forward_batch: ForwardBatch,
+    save_kv_cache=True,
+):
+    # Get the KV Cache location from the forward batch
+    cache_loc = forward_batch.out_cache_loc
+ 
+    # Save the KV Cache for the new tokens
+    if save_kv_cache:
+        forward_batch.token_to_kv_pool.set_kv_buffer(layer, cache_loc, k, v)
+
+    # Use precomputed metadata
+    metadata = self.forward_metadata
+
+    # Get the KV Cache for the previous tokens
+    key_cache, value_cache = forward_batch.token_to_kv_pool.get_kv_buffer(layer.layer_id)
+    o = flash_attn_with_kvcache(
+        q=q.contiguous().view(-1, layer.tp_q_head_num, layer.head_dim),
+        k_cache=key_cache.unsqueeze(1),
+        v_cache=value_cache.unsqueeze(1),
+        page_table=metadata.page_table,
+        cache_seqlens=metadata.cache_seqlens_int32,
+        cu_seqlens_q=metadata.cu_seqlens_q,
+        cu_seqlens_k_new=metadata.cu_seqlens_k,
+        max_seqlen_q=metadata.max_seq_len_q,
+        causal=True, # for auto-regressive attention
+    )
+```
+
+Until now, a bare minimum FlashAttention backend is implemented. We could use this backend to do the attention forward pass.
 
 <div class="divider"></div>
 
