@@ -65,13 +65,59 @@ This series will be split into 3 parts:
 <div class="divider"></div>
 ### Latest Status of Attention Backend in SGLang
 
-| **Backend**              | **Page Size > 1** | **Spec Decoding** | **MLA** | **Local Attention (Llama4) ** | **MultiModal** | **FP8** |
-|--------------------------|-------------------|-------------------|--------|--------------------|------------|--------|
-| **FlashAttention**                  | ✅                | ✅ (Top K >= 1)              | ✅     | ✅                 | ✅ | ✅ |
-| FlashInfer | ✅                | ✅ (Top K >= 1 for non-MLA)                | ✅     | ❌                 | ✅ | ❌ |
-| Triton               | ❌                | ✅                | ✅     | ❌                 | ❌ | ❌ |
-| Torch Native         | ❌                | ❌                | ❌     | ❌                 | ❌ | ❌ |
-
+<div class="table-responsive">
+  <table class="feature-table">
+    <thead>
+      <tr>
+        <th>Backend</th>
+        <th>Page Size > 1</th>
+        <th>Spec Decoding</th>
+        <th>MLA</th>
+        <th>Llama4</th>
+        <th>MultiModal</th>
+        <th>FP8</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="highlight-row">
+        <td><strong>FlashAttention</strong></td>
+        <td><span class="check">✅</span></td>
+        <td><span class="check">✅</span> <small>(Top K >= 1)</small></td>
+        <td><span class="check">✅</span></td>
+        <td><span class="check">✅</span></td>
+        <td><span class="check">✅</span></td>
+        <td><span class="check">✅</span></td>
+      </tr>
+      <tr>
+        <td>FlashInfer</td>
+        <td><span class="check">✅</span></td>
+        <td><span class="check">✅</span> <small>(Top K >= 1 for non-MLA)</small></td>
+        <td><span class="check">✅</span></td>
+        <td><span class="cross">❌</span></td>
+        <td><span class="check">✅</span></td>
+        <td><span class="cross">❌</span></td>
+      </tr>
+      <tr>
+        <td>Triton</td>
+        <td><span class="cross">❌</span></td>
+        <td><span class="check">✅</span></td>
+        <td><span class="check">✅</span></td>
+        <td><span class="cross">❌</span></td>
+        <td><span class="cross">❌</span></td>
+        <td><span class="cross">❌</span></td>
+      </tr>
+      <tr>
+        <td>Torch</td>
+        <td><span class="cross">❌</span></td>
+        <td><span class="cross">❌</span></td>
+        <td><span class="cross">❌</span></td>
+        <td><span class="cross">❌</span></td>
+        <td><span class="cross">❌</span></td>
+        <td><span class="cross">❌</span></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
 
 ### Benchmark Results
 
@@ -96,10 +142,10 @@ I highly recommend this article[^2] to understand the core logic of Flash Attent
 ### How Attention Backend works in SGLang
 
 #### SGLang Architecture
-![SGLang Architecture[^3]](/assets/fa3-basics/sglang-architecture.svg)
+![SGLang Architecture](/assets/fa3-basics/sglang-architecture.svg)
 
 
-[SGLang](https://github.com/sgl-project/sglang), as a modern LLM Serving Engine, has three major components (in logical view):
+[SGLang](https://github.com/sgl-project/sglang), as a modern LLM Serving Engine, has three major components (in logical view)[^3]:
 - **Server Components:** Responsible for handling the incoming requests and sending responses.
 - **Scheduler Components:** Responsible for construct batches and send to Worker.
 - **Model Components:** Responsible for the model inference. 
@@ -179,6 +225,13 @@ Let's give an intuitive example of what does `req_to_token_pool` looks like:
         [8, 9, 10, 11, 12, 13, 14, 15, 17]
     ]
     ```
+4. If the first request already finished, and we ran another decode for second request, the `req_to_token_pool` will be updated to:
+    ```
+    req_to_token_pool = [
+        [0, 1, 2, 3, 4, 5, 6, 7, 16],
+        [8, 9, 10, 11, 12, 13, 14, 15, 17, 18]
+    ]
+    ```
 
 With above prior knowledge, we are already good to implement the attention backend. If you want to know more about the details, please refer to the [Awesome-ML-SYS-Tutorial: KV Cache Code Walkthrough](https://github.com/zhaochenyang20/Awesome-ML-SYS-Tutorial/blob/d4d56dc3ab2260a747964ceb18cb1f69d23146ae/sglang/kvcache-code-walk-through/readme.md).
 
@@ -215,12 +268,7 @@ Share the code implementation of the CUDA Graph support in the FA3 backend.
 
 <div class="divider"></div>
 
-## 0x5. References
-- Tri Dao's [FlashAttention](https://github.com/Dao-AILab/flash-attention)
-- BBUF's Blog: [BBUF's Zhihu Blog](https://zhuanlan.zhihu.com/p/1888278828897523473)
-
-
-## 0x6. Footnotes
+## 0x5. Footnotes
 [^1]: [FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness](https://arxiv.org/abs/2205.14135)
 [^2]: [From Online Softmax to FlashAttention](https://courses.cs.washington.edu/courses/cse599m/23sp/notes/flashattn.pdf)
 [^3]: [Awesome-ML-SYS-Tutorial: SGLang Code Walk Through](https://github.com/zhaochenyang20/Awesome-ML-SYS-Tutorial/blob/d4d56dc3ab2260a747964ceb18cb1f69d23146ae/sglang/code-walk-through/readme.md)
