@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', function() {
-  // Select all h1 and h2 elements within articles
-  const headers = document.querySelectorAll('article h1, article h2');
+  // Select all h1, h2, h3, and h4 elements within articles
+  const headers = document.querySelectorAll('article h1, article h2, article h3, article h4');
   
   headers.forEach(function(header) {
     // Skip headers that already have anchors

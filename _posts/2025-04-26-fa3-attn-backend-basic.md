@@ -86,28 +86,55 @@ To be added.
 **Flash Attention**[^1] is an IO-aware exact attention algorithm that uses tiling to reduce the number of memory reads/writes between GPU high bandwidth memory (HBM) and GPU on-chip SRAM.
 
 ![Flash Attention](/assets/fa3-basics/fa-classic.png)
-It has been widely used in LLM inference and training, and is the default attention backend in modern serving engines like SGLang, vLLM, etc.
+It has been widely used in LLM inference and training, and is the default attention backend in modern serving engines like [SGLang](https://github.com/sgl-project/sglang), [vLLM](https://github.com/vllm-project/vllm), etc.
 
-In most cases, it's fine to treat it as a black box. However, by understanding its core logic, we can use it more intelligently. 
+In most cases, it's fine to treat it as a black box. However, by understanding its core logic, we can use it more intelligently.
 
-I highly recommend this article[^2] to understand the core logic of Flash Attention. And I also have a [**blog post**](https://hebiao064.github.io/flash-attn) on Flash Attention, where I gave a brief introduction from code level.
+I highly recommend this article[^2] to understand the core logic of Flash Attention. And I also have a blog post about [**What is Flash Attention?**](https://hebiao064.github.io/flash-attn), where I gave a brief introduction from code level.
 
 
 ### How Attention Backend works in SGLang
 
+#### SGLang Architecture
 ![SGLang Architecture](/assets/fa3-basics/sglang-architecture.svg)
 
 
-SGLang, as a modern LLM Serving Engine, has three major components (in logical view):
+[SGLang](https://github.com/sgl-project/sglang), as a modern LLM Serving Engine, has three major components (in logical view):
 - **Server Components:** Responsible for handling the incoming requests and sending responses.
 - **Scheduler Components:** Responsible for construct batches and send to Worker.
-- **Model Components:** Responsible for the model inference using attention backends. **The major model forward pass acceleration comes from the Attention Backend.**
+- **Model Components:** Responsible for the model inference. 
+
+Let's focus on the model forward pass in the diagram above.
+
+**In step 8:** the `ModelRunner` processes the `ForwardBatch` and calls `model.forward` to execute the model's forward pass.
+
+**In step 9:** `model.forward` will call each layer's `forward` function, and the majority of the time is spent on the self-attention part. Hence the attention backend becomes the bottleneck of the model inference. In addition to performance, there are many different kind of attention variants such as **MHA, MLA, GQA, Sliding Window, Local Attention** which would require very carefully and optimized attention backend implementation.
 
 
+#### Attention Backend Inheritance
+Here is the inheritance relationship of the attention variants:
+![Attention Variants](/assets/fa3-basics/attn-backend-inheritance.png)
 
+Let's walk through the method in the `AttentionBackend` class to see what's the backbone of the attention backend in SGLang.
+
+1. `forward()`: When `model.forward()` is called, the `forward` method in the `AttentionBackend` will be called. It will be calling `forward_extend()` and `forward_decode` according to the `forward_batch.forward_mode`. In this blog, we only focus on `EXTEND` and `DECODE` mode.
+
+2. `forward_extend()`: This method will be called for each **layer** when the `forward_mode` is `EXTEND`.
+
+3. `forward_decode()`: This method will be called for each **layer** when the `forward_mode` is `DECODE`.
+
+4. `init_forward_metadata()`: This method will be called when the `model.forward()` is called. It could precalculate some metadata for the entire `model.forward()` call, reused by each **layer**, this is critical for accelerating the model inference. What's ironic is, this metadata is the most complicated part of the attention backend, once we set it up, the call of  $$\text{softmax}\left({\mathbf{Q}\mathbf{K}^\top}\right)\mathbf{V}$$ computation is quite straightforward in this context.
+
+5. `init_forward_metadata_replay_cuda_graph`: This method will be called during the server startup, it is critical to accelerate decoding speed.
+
+6. `init_forward_metadata_replay_cuda_graph`: This method will be called during each layer's `forward_decode` being called. It will setup the metadata for the `forwade_decode` call to make sure the CUDA Graph replay could be done correctly.
+
+By far, we have covered all of the methods we need to implement for the attention backend. We will discuss it in following sections.
 
 
 ### How KV Cache Allocator works in SGLang
+
+One thing 
 
 
 

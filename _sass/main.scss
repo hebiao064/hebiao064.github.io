@@ -236,7 +236,7 @@ article {
     text-align: center;
     font-size: 1.4em;
   }
-  h1, h2 {
+  h1, h2, h3, h4 {
     position: relative;
     
     &:hover:before {
@@ -244,7 +244,6 @@ article {
       position: absolute;
       left: -1.5rem;
       color: #999;
-      font-size: 1.5rem;
       font-weight: normal;
     }
     
@@ -256,6 +255,18 @@ article {
         color: inherit;
         border-bottom: none;
       }
+    }
+  }
+  
+  h1, h2 {
+    &:hover:before {
+      font-size: 1.5rem;
+    }
+  }
+  
+  h3, h4 {
+    &:hover:before {
+      font-size: 1.2rem;
     }
   }
   .subtitle {
