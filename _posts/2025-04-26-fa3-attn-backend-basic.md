@@ -373,9 +373,9 @@ def init_forward_metadata(self, forward_batch: ForwardBatch):
     self.forward_metadata = metadata
 ```
 
-### Forward Extend
+### Forward Extend and Forward Decode
 
-In model forward, `model_runner` will call `init_forward_metadata` to initialize the metadata for the attention backend and then call the actual `forward_extend` and `forward_decode`. Hence the implementation of `forward_extend` and `forward_decode` is straightforward, we will just share the `forward_extend` code.
+In model forward, `model_runner` will call `init_forward_metadata` to initialize the metadata for the attention backend and then call the actual `forward_extend` and `forward_decode`. Hence the implementation of `forward_extend` and `forward_decode` is straightforward.
 
 ```python
 def forward_extend(
@@ -410,6 +410,8 @@ def forward_extend(
         max_seqlen_q=metadata.max_seq_len_q,
         causal=True, # for auto-regressive attention
     )
+
+# forward_decode is identical to forward_extend, we've set the metadata differently in init_forward_metadata already
 ```
 
 Until now, a bare minimum FlashAttention backend is implemented. We could use this backend to do the attention forward pass.
@@ -417,7 +419,7 @@ Until now, a bare minimum FlashAttention backend is implemented. We could use th
 <div class="divider"></div>
 
 ## 0x3. CUDA Graph Support
-
+ 
 Share the code implementation of the CUDA Graph support in the FA3 backend.
 
 
