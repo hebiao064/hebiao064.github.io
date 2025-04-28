@@ -1,0 +1,38 @@
+classDiagram
+    class ReqToTokenPool
+    ReqToTokenPool: +int size
+    ReqToTokenPool: +int max_context_len
+    ReqToTokenPool: +alloc(need_size)
+    ReqToTokenPool: +free(free_index)
+    ReqToTokenPool: +write()
+    ReqToTokenPool: +clear()
+    ReqToTokenPool: +available_size()
+
+    class KVCache
+    KVCache: +set_kv_buffer()
+    KVCache: +get_kv_buffer()
+    
+    class MHATokenToKVPool
+    MHATokenToKVPool: +int size
+    MHATokenToKVPool: +int page_size
+    MHATokenToKVPool: +int head_num
+    MHATokenToKVPool: +int head_dim
+    MHATokenToKVPool: +int layer_num
+    MHATokenToKVPool: +set_kv_buffer()
+    MHATokenToKVPool: +get_kv_buffer()
+
+    class MLATokenToKVPool
+    MLATokenToKVPool: +int size
+    MLATokenToKVPool: +int page_size
+    MLATokenToKVPool: +int head_num
+    MLATokenToKVPool: +int head_dim
+    MLATokenToKVPool: +int layer_num
+    MLATokenToKVPool: +set_kv_buffer()
+    MLATokenToKVPool: +get_kv_buffer()
+
+    KVCache <|-- MHATokenToKVPool
+    KVCache <|-- MLATokenToKVPool
+   
+    class TokenToKVPoolAllocator
+    TokenToKVPoolAllocator "1" --o "1" KVCache : carries
+    TokenToKVPoolAllocator: 

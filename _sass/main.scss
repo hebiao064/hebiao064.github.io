@@ -155,9 +155,10 @@ iframe {
 }
 ul,
 ol {
-  margin: 40px 0;
+  margin: 0px 0;
   padding-left: 50px;
   li {
+    margin-bottom: 10px;
     word-wrap: break-word;
   }
   img {

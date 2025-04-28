@@ -1,0 +1,31 @@
+---
+title: SGLang's Attention Backend Inheritance
+---
+classDiagram
+    AttentionBackend <|-- FlashAttentionBackend
+    AttentionBackend <|-- FlashInferAttnBackend
+    AttentionBackend <|-- FlashMLABackend
+    AttentionBackend <|-- TritonAttnBackend
+    AttentionBackend: +forward()
+    AttentionBackend: +forward_extend()
+    AttentionBackend: +forward_decode()
+    AttentionBackend: +init_forward_metadata()
+    AttentionBackend: +init_cuda_graph_state()
+    AttentionBackend: +init_forward_metadata_capture_cuda_graph()
+    AttentionBackend: +init_forward_metadata_replay_cuda_graph()
+    class FlashAttentionBackend{
+        +forward_metadata
+        +req_to_token
+    }
+    class FlashInferAttnBackend{
+        +forward_metadata
+        +req_to_token
+    }
+    class FlashMLABackend{
+        +flashmla_metadata
+        +req_to_token
+    }
+    class TritonAttnBackend{
+        +forward_metadata
+        +req_to_token
+    }

@@ -96,7 +96,7 @@ I highly recommend this article[^2] to understand the core logic of Flash Attent
 ### How Attention Backend works in SGLang
 
 #### SGLang Architecture
-![SGLang Architecture](/assets/fa3-basics/sglang-architecture.svg)
+![SGLang Architecture[^3]](/assets/fa3-basics/sglang-architecture.svg)
 
 
 [SGLang](https://github.com/sgl-project/sglang), as a modern LLM Serving Engine, has three major components (in logical view):
@@ -123,18 +123,66 @@ Let's walk through the method in the `AttentionBackend` class to see what's the 
 
 3. `forward_decode()`: This method will be called for each **layer** when the `forward_mode` is `DECODE`.
 
-4. `init_forward_metadata()`: This method will be called when the `model.forward()` is called. It could precalculate some metadata for the entire `model.forward()` call, reused by each **layer**, this is critical for accelerating the model inference. What's ironic is, this metadata is the most complicated part of the attention backend, once we set it up, the call of  $$\text{softmax}\left({\mathbf{Q}\mathbf{K}^\top}\right)\mathbf{V}$$ computation is quite straightforward in this context.
+4. `init_cuda_graph_state()`: This method will be called during the server startup, it will preallocate those tensors which will be used in the CUDA Graph replay.
 
-5. `init_forward_metadata_replay_cuda_graph`: This method will be called during the server startup, it is critical to accelerate decoding speed.
+5. `init_forward_metadata()`: This method will be called when the `model.forward()` is called. It could precalculate some metadata for the entire `model.forward()` call, reused by each **layer**, this is critical for accelerating the model inference. What's ironic is, this metadata is the most complicated part of the attention backend, once we set it up, the call of  $$\text{softmax}\left({\mathbf{Q}\mathbf{K}^\top}\right)\mathbf{V}$$ computation is quite straightforward in this context.
 
-6. `init_forward_metadata_replay_cuda_graph`: This method will be called during each layer's `forward_decode` being called. It will setup the metadata for the `forwade_decode` call to make sure the CUDA Graph replay could be done correctly.
+6. `init_forward_metadata_replay_cuda_graph`: This method will be called during the server startup, it is critical to accelerate decoding speed.
+
+7. `init_forward_metadata_replay_cuda_graph`: This method will be called during each layer's `forward_decode` being called. It will setup the metadata for the `forwade_decode` call to make sure the CUDA Graph replay could be done correctly.
 
 By far, we have covered all of the methods we need to implement for the attention backend. We will discuss it in following sections.
 
 
-### How KV Cache Allocator works in SGLang
+### How KV Cache works in SGLang
 
-One thing 
+You might be curious about why there is a `req_to_token` in each Attention Backend class. And I didn't put it there accidentally. Actually, **KV Cache**, as the backbone of all LLM Serving Engines, is also very critical to Attention Backend, so let's briefly take a look at it.
+
+There are two-level memory pools to manage KV cache[^4].
+![KV Cache](/assets/fa3-basics/kv_cache.png)
+
+##### req_to_token_pool
+A map from a request to its tokens' KV cache indices. And this is the `req_to_token` we mentioned in Attention Backend Diagram.
+- **Shape:** Max Allowed Requests Number (being set by argument `max-running-requests` for the maximum number of requests to run concurrently) * Max Context Length for each request (being set by config `model_config.context_len`)
+- **Access:** 
+    - Dim0: `req_pool_indices` identify the specific request
+    - Dim1: token positions in req (starting from 0, 1, 2...), identify the specific token in the request
+    - Value: `out_cache_loc` for token, it points to the KV cache indices associated with the token identified by Dim0 and Dim1
+
+##### token_to_kv_pool
+`req_to_token_pool` maintained the map between request to tokens KV cache indices, `token_to_kv_pool` further maps token from its KV cache indices to its real KV cache data.  Note that, for different attention implementation, like [`MHA`](https://arxiv.org/abs/1706.03762), [`MLA`](https://arxiv.org/abs/2405.04434), [`Double Sparsity`](https://arxiv.org/abs/2408.07092), `token_to_kv_pool` could have different implementation.
+- **Layout:** Number of Layers * Max Allowed Tokens Number * Number of Head * Head Dimension
+- **Access:** 
+    - Dim0: `layer_id` identify the specific layer
+    - Dim1: `out_cache_loc` identify the specific KV cache indices (free slots)
+    - Dim2: Head
+    - Dim3: Head Dimension
+    - Value: `cache_k` for k_buffer and `cache_v` for v_buffer, the real KV Cache Data
+
+    Note that we normally retrieve the KV Cache for entire layer all together, because we would need all prior tokens' KV in a request to do forward.
+
+In attnetion backend, we only need to know what is `req_to_token_pool` and the rest of KV Cache management is transparent to the attention backend.
+
+Let's give an intuitive example of what does `req_to_token_pool` looks like:
+1. Assume we have 2 requests, and each request has 7 tokens.
+2. Then `req_to_token_pool` is a 2 * 10 tensor, where each element is the KV cache indices for the token in the request.
+    ```
+    req_to_token_pool = [
+        [0, 1, 2, 3, 4, 5, 6, 7],
+        [8, 9, 10, 11, 12, 13, 14, 15]
+    ]
+    ```
+3. After one forward_extend, the `req_to_token_pool` will be updated to:
+    ```
+    req_to_token_pool = [
+        [0, 1, 2, 3, 4, 5, 6, 7, 16],
+        [8, 9, 10, 11, 12, 13, 14, 15, 17]
+    ]
+    ```
+
+With above prior knowledge, we are already good to implement the attention backend. If you want to know more about the details, please refer to the [Awesome-ML-SYS-Tutorial: KV Cache Code Walkthrough](https://github.com/zhaochenyang20/Awesome-ML-SYS-Tutorial/blob/d4d56dc3ab2260a747964ceb18cb1f69d23146ae/sglang/kvcache-code-walk-through/readme.md).
+
+
 
 
 
@@ -175,4 +223,5 @@ Share the code implementation of the CUDA Graph support in the FA3 backend.
 ## 0x6. Footnotes
 [^1]: [FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness](https://arxiv.org/abs/2205.14135)
 [^2]: [From Online Softmax to FlashAttention](https://courses.cs.washington.edu/courses/cse599m/23sp/notes/flashattn.pdf)
-[^3]: [Online Softmax](https://arxiv.org/abs/1805.02867)
+[^3]: [Awesome-ML-SYS-Tutorial: SGLang Code Walk Through](https://github.com/zhaochenyang20/Awesome-ML-SYS-Tutorial/blob/d4d56dc3ab2260a747964ceb18cb1f69d23146ae/sglang/code-walk-through/readme.md)
+[^4]: [Awesome-ML-SYS-Tutorial: KV Cache Code Walkthrough](https://github.com/zhaochenyang20/Awesome-ML-SYS-Tutorial/blob/d4d56dc3ab2260a747964ceb18cb1f69d23146ae/sglang/kvcache-code-walk-through/readme.md)
