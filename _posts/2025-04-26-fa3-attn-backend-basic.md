@@ -45,12 +45,12 @@ updated: 2025-04-26 11:11
 
 ## 0x0. Introduction
 
-In the past few weeks, we've implemented the Flash Attention Backend end to end in SGLang, which has been turned on by default attention backend in SGLang [`0.4.6` release](https://github.com/sgl-project/sglang/releases/tag/v0.4.6).
+In the past few weeks, we've implemented the Flash Attention Backend end-to-end in SGLang, which is now the default attention backend as of SGLang [`0.4.6` release](https://github.com/sgl-project/sglang/releases/tag/v0.4.6).
 
 ![Slack Announcement](/assets/fa3-basics/slack-announcement.png)
-From this journey, we learned a lot about how Attention Backend works in modern LLM serving engines and Flash Attention itself.
+Throughout this journey, we learned a lot about how Attention Backend functions in modern LLM serving engines and developed a deeper understanding of Flash Attention itself.
 
-We want to go through the implementation in detail and we hope this series can be helpful for anyone who wants to implement a new backend in serving engines.
+In this series, we'll walk through the implementation details, sharing insights that we hope will benefit anyone looking to implement their own attention backend in LLM serving engines.
 
 
 <div class="divider"></div>
@@ -60,7 +60,7 @@ This series will be split into 3 parts:
 
 * **Part 1:** Basics, KV Cache and CUDA Graph Support (this post)
 * **Part 2:** Speculative Decoding Support (coming soon)
-* **Part 3:** MLA, LLama4, Sliding Window and Multimodal Support (coming soon)
+* **Part 3:** MLA, Llama 4, Sliding Window and Multimodal Support (coming soon)
 
 <div class="divider"></div>
 ### Latest Status of Attention Backend in SGLang
@@ -123,9 +123,9 @@ This series will be split into 3 parts:
 
 ![Benchmark Results](/assets/fa3-basics/benchmark-baseline.png)
 
-- Prefill Throughput are on par than current baseline
-- Decode Throughput are higher than current baseline
-- Flashinfer will OOM when batch size, input size is large while FA3 won't
+- Prefill Throughput is on par with current baseline
+- Decode Throughput is higher than current baseline
+- FlashInfer will OOM when batch size and input size are large while FA3 won't
 
 Detailed benchmark results are available in [this sheet](https://docs.google.com/spreadsheets/d/14SjCU5Iphf2EsD4cZJqsYKQn8YbPPt0ZA5viba3gB1Y/edit?gid=0#gid=0)
 
@@ -159,7 +159,7 @@ Let's focus on the model forward pass in the diagram above.
 
 **In step 8:** the `ModelRunner` processes the `ForwardBatch` and calls `model.forward` to execute the model's forward pass.
 
-**In step 9:** `model.forward` will call each layer's `forward` function, and the majority of the time is spent on the self-attention part. Hence the attention backend becomes the bottleneck of the model inference. In addition to performance, there are many different kind of attention variants such as **MHA, MLA, GQA, Sliding Window, Local Attention** which would require very carefully and optimized attention backend implementation.
+**In step 9:** `model.forward` will call each layer's `forward` function, and the majority of the time is spent on the self-attention part. Hence the attention backend becomes the bottleneck of the model inference. In addition to performance, there are many different kinds of attention variants such as **MHA, MLA, GQA, Sliding Window, Local Attention** which require carefully optimized attention backend implementations.
 
 
 #### Attention Backend Inheritance
@@ -178,7 +178,7 @@ Let's walk through the method in the `AttentionBackend` class to see what's the 
 
 5. `init_forward_metadata()`: This method will be called when the `model.forward()` is called. It could precalculate some metadata for the entire `model.forward()` call, reused by each **layer**, this is critical for accelerating the model inference. What's ironic is, this metadata is the most complicated part of the attention backend, once we set it up, the call of  $$\text{softmax}\left({\mathbf{Q}\mathbf{K}^\top}\right)\mathbf{V}$$ computation is quite straightforward in this context.
 
-6. `init_forward_metadata_replay_cuda_graph`: This method will be called during the server startup, it is critical to accelerate decoding speed.
+6. `init_forward_metadata_capture_cuda_graph`: This method will be called during the server startup, `CUDAGraphRunner` will call this method during CUDA Graph Capture. CUDA Graph will stored in memory within `CUDAGraphRunner`'s `self.graphs` object.
 
 7. `init_forward_metadata_replay_cuda_graph`: This method will be called during each layer's `forward_decode` being called. It will setup the metadata for the `forwade_decode` call to make sure the CUDA Graph replay could be done correctly.
 
@@ -212,35 +212,38 @@ A map from a request to its tokens' KV cache indices. And this is the `req_to_to
 
     Note that we normally retrieve the KV Cache for entire layer all together, because we would need all prior tokens' KV in a request to do forward.
 
-In attnetion backend, we only need to know what is `req_to_token_pool` and the rest of KV Cache management is transparent to the attention backend.
+In attention backend, we only need to know what `req_to_token_pool` is and the rest of KV Cache management is transparent to the attention backend.
 
-Let's give an intuitive example of what does `req_to_token_pool` looks like:
+Let's give an intuitive example of what `req_to_token_pool` looks like:
 1. Assume we have 2 requests, and each request has 7 tokens.
-2. Then `req_to_token_pool` is a 2 * 10 tensor, where each element is the KV cache indices for the token in the request.
+2. Then `req_to_token_pool` is a tensor with shape (2, 7), where each entry maps a token in a request to its corresponding KV cache index. 
     ```
     req_to_token_pool = [
-        [0, 1, 2, 3, 4, 5, 6, 7],
-        [8, 9, 10, 11, 12, 13, 14, 15]
+        [1, 2, 3, 4, 5, 6, 7],
+        [8, 9, 10, 11, 12, 13, 14]
     ]
     ```
-3. After one forward_extend, the `req_to_token_pool` will be updated to:
+    `seq_lens` is [7, 7].
+3. After one forward_extend that adds a new token to each request, the `req_to_token_pool` will be updated to:
     ```
     req_to_token_pool = [
-        [0, 1, 2, 3, 4, 5, 6, 7, 16],
-        [8, 9, 10, 11, 12, 13, 14, 15, 17]
+        [1, 2, 3, 4, 5, 6, 7, 15],
+        [8, 9, 10, 11, 12, 13, 14, 16]
     ]
     ```
-4. If the first request already finished, and we ran another decode for second request, the `req_to_token_pool` will be updated to:
+    `seq_lens` is [8, 8].
+4. If the first request is complete and we run another decode for the second request, the `req_to_token_pool` will be updated to:
     ```
     req_to_token_pool = [
-        [0, 1, 2, 3, 4, 5, 6, 7, 16],
-        [8, 9, 10, 11, 12, 13, 14, 15, 17, 18]
+        [1, 2, 3, 4, 5, 6, 7, 15],
+        [8, 9, 10, 11, 12, 13, 14, 16, 17]
     ]
     ```
+    `seq_lens` is [8, 9].
 
-With above prior knowledge, we are already good to implement the attention backend. If you want to know more about the details, please refer to the [Awesome-ML-SYS-Tutorial: KV Cache Code Walkthrough](https://github.com/zhaochenyang20/Awesome-ML-SYS-Tutorial/blob/d4d56dc3ab2260a747964ceb18cb1f69d23146ae/sglang/kvcache-code-walk-through/readme.md).
+With the above knowledge about KV Cache structure, we now have the foundation to implement our FlashAttention backend. The next step is to identify the correct parameters for the `flash_attn_with_kvcache` API to create a minimal working implementation.
 
-
+For more details on KV Cache, refer to the [Awesome-ML-SYS-Tutorial: KV Cache Code Walkthrough](https://github.com/zhaochenyang20/Awesome-ML-SYS-Tutorial/blob/d4d56dc3ab2260a747964ceb18cb1f69d23146ae/sglang/kvcache-code-walk-through/readme.md).
 
 <div class="divider"></div>
 
@@ -250,12 +253,12 @@ OK, let's start diving into the implementation of the **FlashAttention** backend
 
 
 
-> Here is the PR for the basic implementation: [sgl-project/sglang#4680](https://github.com/sgl-project/sglang/pull/4680). I simiplified the code in this blog for brevity and only focus on the core logic.
+> Here is the PR for the basic implementation: [sgl-project/sglang#4680](https://github.com/sgl-project/sglang/pull/4680). I simplified the code in this blog for brevity and only focus on the core logic.
 
 ### Tri Dao's FlashAttention 3 Kernel API
-Tri Dao's has provided serveral public APIs for Flash Attention 3, the entry point is [hopper/flash_attn_interface.py](https://github.com/Dao-AILab/flash-attention/blob/main/hopper/flash_attn_interface.py).
+Tri Dao has provided several public APIs for Flash Attention 3, the entry point is [hopper/flash_attn_interface.py](https://github.com/Dao-AILab/flash-attention/blob/main/hopper/flash_attn_interface.py).
 
-We choose to use `flash_attn_with_kvcache` to avoid the overhead of find out and assemble key and value from attention backend since this API could let us pass in the entire page table and it will do the rest of the job.
+We choose to use `flash_attn_with_kvcache` to avoid the overhead of finding and assembling key and value from attention backend since this API allows us to pass in the entire page table and it will do the rest of the job.
 
 Let's take a quick look at the `flash_attn_with_kvcache` API:
 ```python
@@ -499,7 +502,7 @@ def init_forward_metadata_capture_cuda_graph(
         self.decode_cuda_graph_metadata[bs] = metadata
 ```
 
-> To be honest, we don't care too much about the actual value being set in `init_forward_metadata_capture_cuda_graph()` because we will override in `init_forward_metadata_replay_cuda_graph` anyway. We just need to make sure the tensor shape is correct.
+> To be honest, we don't care too much about the actual value being set in `init_forward_metadata_capture_cuda_graph` because we will override in `init_forward_metadata_replay_cuda_graph` anyway. We just need to make sure the tensor shape is correct.
 
 
 ### init_forward_metadata_replay_cuda_graph()
@@ -547,11 +550,32 @@ def init_forward_metadata_replay_cuda_graph(
         self.forward_metadata = metadata
 ```
 
-Until now, a CUDA Graph supported FlashAttention backend is implemented!
+> Until now, a CUDA Graph supported FlashAttention backend is implemented!
 
 <div class="divider"></div>
 
-## 0x4. Footnotes
+## 0x4. Conclusion
+
+In this article, we've explored several key components:
+- The fundamentals of FlashAttention and its operational principles
+- The architecture of Attention Backend in SGLang
+- The implementation details of KV Cache in SGLang
+- A step-by-step approach to implementing a basic FlashAttention backend
+- The process of integrating CUDA Graph support for optimized performance
+
+In our upcoming articles, we'll delve into more advanced topics including Speculative Decoding (a challenging implementation that took us over 3 weeks!), as well as MLA, Llama 4, Multimodal capabilities, and more!
+
+## 0x5. Thoughts about Open Source
+
+This is my first significant contribution to a popular open source project, and I'm truly grateful for the community's support and the maintainers' guidance throughout this process.
+
+For MLSys enthusiasts who want to begin their own journey in open source, I highly recommend joining the [SGLang](https://github.com/sgl-project/sglang) community. Here are some personal tips from my experience:
+
+* You don't need to be an expert to start contributing. Contributions to documentation, benchmarking, and bug fixes are all valuable and welcomed. In fact, my first two PRs were focused on documentation and benchmarking.
+* Finding a good first issue can be challenging in established projects like SGLang. My approach was to follow a specific area closely (e.g: Quantization), monitor relevant PRs and issues, and offer assistance with smaller tasks by reaching out to PR authors through comments or Slack.
+* Be accountable for your contributions and commitments. In open source communities, professional relationships are built on trust and reliability. Remember that most contributors are balancing open source work with full-time jobs, so respecting everyone's time and effort is essential.
+
+## 0x6. Footnotes
 [^1]: [FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness](https://arxiv.org/abs/2205.14135)
 [^2]: [From Online Softmax to FlashAttention](https://courses.cs.washington.edu/courses/cse599m/23sp/notes/flashattn.pdf)
 [^3]: [Awesome-ML-SYS-Tutorial: SGLang Code Walk Through](https://github.com/zhaochenyang20/Awesome-ML-SYS-Tutorial/blob/d4d56dc3ab2260a747964ceb18cb1f69d23146ae/sglang/code-walk-through/readme.md)
