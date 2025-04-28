@@ -58,7 +58,7 @@ We want to go through the implementation in detail and we hope this series can b
 
 This series will be split into 3 parts:
 
-* **Part 1:** Basics, Paged KV Cache and CUDA Graph Support (this post)
+* **Part 1:** Basics, KV Cache and CUDA Graph Support (this post)
 * **Part 2:** Speculative Decoding Support (coming soon)
 * **Part 3:** MLA, LLama4, Sliding Window and Multimodal Support (coming soon)
 
@@ -121,7 +121,7 @@ This series will be split into 3 parts:
 
 ### Benchmark Results
 
-![Benchmark Results](/assets/fa3-basics/benchmark.png)
+![Benchmark Results](/assets/fa3-basics/benchmark-baseline.png)
 
 - Prefill Throughput are on par than current baseline
 - Decode Throughput are higher than current baseline
@@ -425,23 +425,133 @@ Until now, a bare minimum FlashAttention backend is implemented. We could use th
 
 ## 0x3. CUDA Graph Support
  
-Share the code implementation of the CUDA Graph support in the FA3 backend.
+![CUDAGraphRunner](/assets/fa3-basics/cuda-graph-runner.png)
+In SGLang, CUDA Graph's capture and replay was done by `CUDAGraphRunner` class.
+Given that the framework already has a pretty decent design about how CUDAGraphRunner works with attention backend, we can focus on implementing those three methods:
+- `init_cuda_graph_state()`
+- `init_forward_metadata_capture_cuda_graph()`
+- `init_forward_metadata_replay_cuda_graph()`
+
+### init_cuda_graph_state()
+```python
+def init_cuda_graph_state(self, max_bs: int):
+    """Initialize CUDA graph state for the attention backend.
+
+    Args:
+        max_bs (int): Maximum batch size to support in CUDA graphs
+
+    This creates fixed-size tensors during server startup that will be reused during CUDA graph replay to avoid memory allocations.
+    """
+    self.decode_cuda_graph_metadata = {
+        # Sequence Lengths in int32 (batch_size)
+        "cache_seqlens": torch.zeros(max_bs, dtype=torch.int32, device=self.device),
+        # Cumulative Sequence Lengths for Query (batch_size + 1)
+        "cu_seqlens_q": torch.arange(
+            0, max_bs + 1, dtype=torch.int32, device=self.device
+        ),
+        # Cumulative Sequence Lengths for Key (batch_size + 1)
+        "cu_seqlens_k": torch.zeros(
+            max_bs + 1, dtype=torch.int32, device=self.device
+        ),
+        # Page Table for token mapping from request to tokens' KV cache indices (batch_size, max_context_len)
+        "page_table": torch.zeros(
+            max_bs,
+            self.max_context_len,
+            dtype=torch.int32,
+            device=self.device,
+        ),
+    }
+```
+
+> It's worth noting that, we found for metadata with tensor type, we need to be initialized first and then copy the value into the preallocated tensors, otherwise CUDA Graph will not work. For those metadata with scalar type (e.g: `max_seq_len_q`, `max_seq_len_k`), we can directly create new variable.
+
+### init_forward_metadata_capture_cuda_graph()
+```python
+def init_forward_metadata_capture_cuda_graph(
+        self,
+        bs: int,
+        num_tokens: int,
+        req_pool_indices: torch.Tensor,
+        seq_lens: torch.Tensor,
+        encoder_lens: Optional[torch.Tensor],
+        forward_mode: ForwardMode,
+    ):
+        """Initialize forward metadata for capturing CUDA graph."""
+        metadata = FlashAttentionMetadata()
+        device = seq_lens.device
+        batch_size = len(seq_lens)
+        metadata.cache_seqlens_int32 = seq_lens.to(torch.int32)
+
+        if forward_mode == ForwardMode.DECODE:
+            metadata.cu_seqlens_q = torch.arange(
+                0, batch_size + 1, dtype=torch.int32, device=device
+            )
+            metadata.max_seq_len_k = seq_lens.max().item()
+            metadata.cu_seqlens_k = torch.nn.functional.pad(
+                torch.cumsum(seq_lens, dim=0, dtype=torch.int32), (1, 0)
+            )
+            metadata.page_table = self.decode_cuda_graph_metadata["page_table"][
+                req_pool_indices, :
+            ]
+        else:
+            raise NotImplementedError(f"Forward mode {forward_mode} is not supported yet")
+
+        self.decode_cuda_graph_metadata[bs] = metadata
+```
+
+> To be honest, we don't care too much about the actual value being set in `init_forward_metadata_capture_cuda_graph()` because we will override in `init_forward_metadata_replay_cuda_graph` anyway. We just need to make sure the tensor shape is correct.
 
 
+### init_forward_metadata_replay_cuda_graph()
+```python
+def init_forward_metadata_replay_cuda_graph(
+        self,
+        bs: int,
+        req_pool_indices: torch.Tensor,
+        seq_lens: torch.Tensor,
+        seq_lens_sum: int,
+        encoder_lens: Optional[torch.Tensor],
+        forward_mode: ForwardMode,
+        seq_lens_cpu: Optional[torch.Tensor],
+        out_cache_loc: torch.Tensor = None,
+    ):
+        """Initialize forward metadata for replaying CUDA graph."""
+        # Get the sequence lengths in batch, we slice it out from the preallocated tensors
+        seq_lens = seq_lens[:bs]
+        # Get the sequence lengths in CPU, we slice it out from the preallocated tensors
+        seq_lens_cpu = seq_lens_cpu[:bs]
+        # Get the request pool indices, we slice it out from the preallocated tensors
+        req_pool_indices = req_pool_indices[:bs]
+        # Get the device of the model
+        device = seq_lens.device
+        # Get the metadata for the decode, which have been precomputed in init_forward_metadata_capture_cuda_graph() and initialized in init_cuda_graph_state()
+        metadata = self.decode_cuda_graph_metadata[bs]
 
+        if forward_mode == ForwardMode.DECODE: 
+            # Update the sequence lengths with actual values
+            metadata.cache_seqlens_int32 = seq_lens.to(torch.int32)
+            # Update the maximum sequence length for key with actual values
+            metadata.max_seq_len_k = seq_lens_cpu.max().item()
+            # Update the cumulative sequence lengths for key with actual values
+            metadata.cu_seqlens_k = torch.nn.functional.pad(
+                torch.cumsum(seq_lens, dim=0, dtype=torch.int32), (1, 0)
+            )
+            # Update the page table with actual values
+            metadata.page_table[:, : metadata.max_seq_len_k].copy_(
+                self.req_to_token[req_pool_indices[:bs], : metadata.max_seq_len_k]
+            )
+
+        else:
+            raise NotImplementedError(f"Forward mode {forward_mode} is not supported yet")
+
+        self.forward_metadata = metadata
+```
+
+Until now, a CUDA Graph supported FlashAttention backend is implemented!
 
 <div class="divider"></div>
 
-## 0x4. Thoughts
-
-### Share some personal experience and thoughts as a new contributor to SGLang.
-
-### Future Work
-
-
-<div class="divider"></div>
-
-## 0x5. Footnotes
+## 0x4. Footnotes
 [^1]: [FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness](https://arxiv.org/abs/2205.14135)
 [^2]: [From Online Softmax to FlashAttention](https://courses.cs.washington.edu/courses/cse599m/23sp/notes/flashattn.pdf)
 [^3]: [Awesome-ML-SYS-Tutorial: SGLang Code Walk Through](https://github.com/zhaochenyang20/Awesome-ML-SYS-Tutorial/blob/d4d56dc3ab2260a747964ceb18cb1f69d23146ae/sglang/code-walk-through/readme.md)
