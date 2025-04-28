@@ -121,8 +121,13 @@ This series will be split into 3 parts:
 
 ### Benchmark Results
 
-To be added.
+![Benchmark Results](/assets/fa3-basics/benchmark.png)
 
+- Prefill Throughput are on par than current baseline
+- Decode Throughput are higher than current baseline
+- Flashinfer will OOM when batch size, input size is large while FA3 won't
+
+Detailed benchmark results are available in [this sheet](https://docs.google.com/spreadsheets/d/14SjCU5Iphf2EsD4cZJqsYKQn8YbPPt0ZA5viba3gB1Y/edit?gid=0#gid=0)
 
 <div class="divider"></div>
 
