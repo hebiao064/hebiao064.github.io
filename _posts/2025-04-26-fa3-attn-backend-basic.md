@@ -258,7 +258,8 @@ OK, let's start diving into the implementation of the **FlashAttention** backend
 ### Tri Dao's FlashAttention 3 Kernel API
 Tri Dao has provided several public APIs for Flash Attention 3, the entry point is [hopper/flash_attn_interface.py](https://github.com/Dao-AILab/flash-attention/blob/main/hopper/flash_attn_interface.py).
 
-We choose to use `flash_attn_with_kvcache` to avoid the overhead of finding and assembling key and value from attention backend since this API allows us to pass in the entire page table and it will do the rest of the job.
+We opted for `flash_attn_with_kvcache` for two key reasons: it eliminates the overhead of manually assembling key-value pairs by accepting the entire page table directly, and it provides native support for Paged KV Cache (Page Size > 1), which is not available in `flash_attn_varlen_func`.
+
 
 Let's take a quick look at the `flash_attn_with_kvcache` API:
 ```python
@@ -429,7 +430,7 @@ Until now, a bare minimum FlashAttention backend is implemented. We could use th
 ## 0x3. CUDA Graph Support
  
 ### What is CUDA Graph?
-CUDA Graph is a feature in NVIDIA’s CUDA platform that allows you to capture a sequence of GPU operations and replay them as a single, optimized unit. Traditionally, each GPU kernel launch from the CPU incurs some launch latency, and the CPU must coordinate each step in sequence. This overhead can become significant, especially for workloads with many small kernels.[^5]
+CUDA Graph is a feature in NVIDIA's CUDA platform that allows you to capture a sequence of GPU operations and replay them as a single, optimized unit. Traditionally, each GPU kernel launch from the CPU incurs some launch latency, and the CPU must coordinate each step in sequence. This overhead can become significant, especially for workloads with many small kernels.[^5]
 
 With CUDA Graph, you can record a series of operations (such as A, B, C, D, E in the diagram) into a graph, and then launch the entire graph in one go. This approach eliminates repeated CPU launch overhead and enables the GPU to execute the operations more efficiently, resulting in significant time savings.
 The diagram below illustrates this concept:
@@ -562,8 +563,10 @@ def init_forward_metadata_replay_cuda_graph(
             # Update the maximum sequence length for key with actual values
             metadata.max_seq_len_k = seq_lens_cpu.max().item()
             # Update the cumulative sequence lengths for key with actual values
-            metadata.cu_seqlens_k = torch.nn.functional.pad(
-                torch.cumsum(seq_lens, dim=0, dtype=torch.int32), (1, 0)
+            metadata.cu_seqlens_k.copy_(
+                torch.nn.functional.pad(
+                    torch.cumsum(seq_lens, dim=0, dtype=torch.int32), (1, 0)
+                )
             )
             # Update the page table with actual values
             metadata.page_table[:, : metadata.max_seq_len_k].copy_(
