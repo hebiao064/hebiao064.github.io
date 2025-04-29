@@ -462,7 +462,7 @@ You can find the detailed flow of how CUDAGraphRunner works with attention backe
 
 <br/>
 
-### init_cuda_graph_state()
+#### Init CUDA Graph State
 ```python
 def init_cuda_graph_state(self, max_bs: int):
     """Initialize CUDA graph state for the attention backend.
@@ -495,7 +495,7 @@ def init_cuda_graph_state(self, max_bs: int):
 
 > It's worth noting that, we found for metadata with tensor type, we need to be initialized first and then copy the value into the preallocated tensors, otherwise CUDA Graph will not work. For those metadata with scalar type (e.g: `max_seq_len_q`, `max_seq_len_k`), we can directly create new variable.
 
-### init_forward_metadata_capture_cuda_graph()
+#### Prepare Metadata for Capture
 ```python
 def init_forward_metadata_capture_cuda_graph(
         self,
@@ -532,7 +532,7 @@ def init_forward_metadata_capture_cuda_graph(
 > To be honest, we don't care too much about the actual value being set in `init_forward_metadata_capture_cuda_graph` because we will override in `init_forward_metadata_replay_cuda_graph` anyway. We just need to make sure the tensor shape is correct.
 
 
-### init_forward_metadata_replay_cuda_graph()
+#### Prepare Metadata for Replay
 ```python
 def init_forward_metadata_replay_cuda_graph(
         self,
