@@ -611,7 +611,8 @@ For MLSys enthusiasts who want to begin their own journey in open source, I high
 [^2]: [From Online Softmax to FlashAttention](https://courses.cs.washington.edu/courses/cse599m/23sp/notes/flashattn.pdf)
 [^3]: [Awesome-ML-SYS-Tutorial: SGLang Code Walk Through](https://github.com/zhaochenyang20/Awesome-ML-SYS-Tutorial/blob/d4d56dc3ab2260a747964ceb18cb1f69d23146ae/sglang/code-walk-through/readme.md)
 [^4]: [Awesome-ML-SYS-Tutorial: KV Cache Code Walkthrough](https://github.com/zhaochenyang20/Awesome-ML-SYS-Tutorial/blob/d4d56dc3ab2260a747964ceb18cb1f69d23146ae/sglang/kvcache-code-walk-through/readme.md)
-[^5]: [CUDA Graphs](https://pytorch.org/blog/accelerating-pytorch-with-cuda-graphs/)
-[^6]: [CUTLASS](https://github.com/NVIDIA/cutlass)
+[^5]: [Accelerating PyTorch with CUDA Graphs
+](https://pytorch.org/blog/accelerating-pytorch-with-cuda-graphs/)
+[^6]: [CUTLASS: CUDA Templates for Linear Algebra Subroutines](https://github.com/NVIDIA/cutlass)
 [^7]: [Flash Attention 3: Fast and Accurate Attention with Asynchrony and Low-precision](https://tridao.me/blog/2024/flash3/)
 [^8]: [SGLang: A Zero-Overhead Batch Scheduler for LLM Serving](https://lmsys.org/blog/2024-12-04-sglang-v0-4/#zero-overhead-batch-scheduler)
