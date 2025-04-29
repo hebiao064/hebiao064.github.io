@@ -104,7 +104,7 @@ This series will be split into 3 parts:
         <td><span class="check">✅</span></td>
         <td><span class="cross">❌</span></td>
         <td><span class="cross">❌</span></td>
-        <td><span class="cross">❌</span></td>
+        <td><span class="cross">✅</span></td>
       </tr>
       <tr>
         <td>Torch</td>
