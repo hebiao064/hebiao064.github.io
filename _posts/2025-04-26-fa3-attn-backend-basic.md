@@ -73,7 +73,7 @@ This series will be split into 3 parts:
         <th>Page Size > 1</th>
         <th>Spec Decoding</th>
         <th>MLA</th>
-        <th>Llama4</th>
+        <th>Llama 4</th>
         <th>MultiModal</th>
         <th>FP8</th>
       </tr>
@@ -121,13 +121,13 @@ This series will be split into 3 parts:
 
 ### Benchmark Results
 
-![Benchmark Results](/assets/fa3-basics/benchmark-baseline.png)
+![Benchmark Results](/assets/fa3-basics/benchmark-deepseek.png)
 
-- Prefill Throughput is on par with current baseline
-- Decode Throughput is higher than current baseline
-- FlashInfer will OOM when batch size and input size are large while FA3 won't
 
-Detailed benchmark results are available in [this sheet](https://docs.google.com/spreadsheets/d/14SjCU5Iphf2EsD4cZJqsYKQn8YbPPt0ZA5viba3gB1Y/edit?gid=0#gid=0)
+The benchmark results demonstrate that FA3 consistently delivers the highest throughput across all tested scenarios, outperforming both FlashInfer and Triton, especially as the input or output size increases.
+
+> We followed the same benchmark setup as this [comment](https://github.com/sgl-project/sglang/issues/5514#issuecomment-2814763352) being used.
+> Detailed benchmark results are available in [this sheet](https://docs.google.com/spreadsheets/d/14SjCU5Iphf2EsD4cZJqsYKQn8YbPPt0ZA5viba3gB1Y/edit?gid=0#gid=0)
 
 <div class="divider"></div>
 
@@ -428,12 +428,38 @@ Until now, a bare minimum FlashAttention backend is implemented. We could use th
 
 ## 0x3. CUDA Graph Support
  
-![CUDAGraphRunner](/assets/fa3-basics/cuda-graph-runner.png)
+### What is CUDA Graph?
+CUDA Graph is a feature in NVIDIA’s CUDA platform that allows you to capture a sequence of GPU operations and replay them as a single, optimized unit. Traditionally, each GPU kernel launch from the CPU incurs some launch latency, and the CPU must coordinate each step in sequence. This overhead can become significant, especially for workloads with many small kernels.[^5]
+
+With CUDA Graph, you can record a series of operations (such as A, B, C, D, E in the diagram) into a graph, and then launch the entire graph in one go. This approach eliminates repeated CPU launch overhead and enables the GPU to execute the operations more efficiently, resulting in significant time savings.
+The diagram below illustrates this concept:
+The top part shows the traditional approach, where each kernel launch incurs CPU overhead.
+The bottom part shows the CUDA Graph approach, where the entire sequence is launched as a single graph, reducing CPU time and improving overall throughput.
+
+![CUDA Graph](/assets/fa3-basics/cuda-graph.png)
+
+Actually, I found that a lot of significant speedups in modern LLM Serving Engine comes from parallelizing multiple workloads and overlapping their execution. I can easily name a few examples: 
+- CUTLASS's overlap of TMA and WGMMA[^6]
+- Flash Attention's overlap of GEMM and Softmax[^7]
+- SGLang's Zero-Overhead Batch Scheduler[^8]
+
+I believe there are more opportunities with this simple but effective philosophy, it make me really excited to see more and more cool projects being built on top of next generation hardwares.
+
+
+### How CUDA Graph works in SGLang
+
 In SGLang, CUDA Graph's capture and replay was done by `CUDAGraphRunner` class.
 Given that the framework already has a pretty decent design about how CUDAGraphRunner works with attention backend, we can focus on implementing those three methods:
 - `init_cuda_graph_state()`
 - `init_forward_metadata_capture_cuda_graph()`
 - `init_forward_metadata_replay_cuda_graph()`
+
+You can find the detailed flow of how CUDAGraphRunner works with attention backend in the diagram below:
+<br/>
+
+![CUDAGraphRunner](/assets/fa3-basics/cuda-graph-runner.png)
+
+<br/>
 
 ### init_cuda_graph_state()
 ```python
@@ -565,6 +591,8 @@ In this article, we've explored several key components:
 
 In our upcoming articles, we'll delve into more advanced topics including Speculative Decoding (a challenging implementation that took us over 3 weeks!), as well as MLA, Llama 4, Multimodal capabilities, and more!
 
+<div class="divider"></div>
+
 ## 0x5. Thoughts about Open Source
 
 This is my first significant contribution to a popular open source project, and I'm truly grateful for the community's support and the maintainers' guidance throughout this process.
@@ -575,8 +603,15 @@ For MLSys enthusiasts who want to begin their own journey in open source, I high
 * Finding a good first issue can be challenging in established projects like SGLang. My approach was to follow a specific area closely (e.g: Quantization), monitor relevant PRs and issues, and offer assistance with smaller tasks by reaching out to PR authors through comments or Slack.
 * Be accountable for your contributions and commitments. In open source communities, professional relationships are built on trust and reliability. Remember that most contributors are balancing open source work with full-time jobs, so respecting everyone's time and effort is essential.
 
+
+<div class="divider"></div>
+
 ## 0x6. Footnotes
 [^1]: [FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness](https://arxiv.org/abs/2205.14135)
 [^2]: [From Online Softmax to FlashAttention](https://courses.cs.washington.edu/courses/cse599m/23sp/notes/flashattn.pdf)
 [^3]: [Awesome-ML-SYS-Tutorial: SGLang Code Walk Through](https://github.com/zhaochenyang20/Awesome-ML-SYS-Tutorial/blob/d4d56dc3ab2260a747964ceb18cb1f69d23146ae/sglang/code-walk-through/readme.md)
 [^4]: [Awesome-ML-SYS-Tutorial: KV Cache Code Walkthrough](https://github.com/zhaochenyang20/Awesome-ML-SYS-Tutorial/blob/d4d56dc3ab2260a747964ceb18cb1f69d23146ae/sglang/kvcache-code-walk-through/readme.md)
+[^5]: [CUDA Graphs](https://pytorch.org/blog/accelerating-pytorch-with-cuda-graphs/)
+[^6]: [CUTLASS](https://github.com/NVIDIA/cutlass)
+[^7]: [Flash Attention 3: Fast and Accurate Attention with Asynchrony and Low-precision](https://tridao.me/blog/2024/flash3/)
+[^8]: [SGLang: A Zero-Overhead Batch Scheduler for LLM Serving](https://lmsys.org/blog/2024-12-04-sglang-v0-4/#zero-overhead-batch-scheduler)
