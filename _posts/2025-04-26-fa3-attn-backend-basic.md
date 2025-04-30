@@ -59,8 +59,8 @@ In this series, we'll walk through the implementation details, sharing insights 
 This series will be split into 3 parts:
 
 * **Part 1:** Basics, KV Cache and CUDA Graph Support (this post)
-* **Part 2:** Speculative Decoding Support (coming soon)
-* **Part 3:** MLA, Llama 4, Sliding Window and Multimodal Support (coming soon)
+* **Part 2:** Speculative Decoding Support (work is done, blog is coming soon)
+* **Part 3:** MLA, Llama 4, Sliding Window and Multimodal Support (work is done, blog is coming soon)
 
 <div class="divider"></div>
 ### Latest Status of Attention Backend in SGLang
