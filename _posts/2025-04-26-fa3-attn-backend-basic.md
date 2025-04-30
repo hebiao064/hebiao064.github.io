@@ -93,9 +93,9 @@ This series will be split into 3 parts:
         <td><span class="check">✅</span></td>
         <td><span class="check">✅</span> </td>
         <td><span class="check">✅</span></td>
-        <td><span class="cross">✅</span></td>
         <td><span class="check">✅</span></td>
-        <td><span class="cross">❌</span></td>
+        <td><span class="check">✅</span></td>
+        <td><span class="check">✅</span></td>
       </tr>
       <tr>
         <td>Triton</td>
@@ -141,7 +141,7 @@ It has been widely used in LLM inference and training, and is the default attent
 
 In most cases, it's fine to treat it as a black box. However, by understanding its core logic, we can use it more intelligently.
 
-I highly recommend this article[^2] to understand the core logic of Flash Attention. And I also have a blog post about [**What is Flash Attention?**](https://hebiao064.github.io/flash-attn), where I gave a brief introduction from code level.
+I highly recommend this article[^2] to understand the core logic of Flash Attention.
 
 
 ### How Attention Backend works in SGLang
