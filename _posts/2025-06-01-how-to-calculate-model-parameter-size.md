@@ -221,3 +221,15 @@ This approach can be applied to any transformer-based model by adapting the arch
 
 
 <div class="divider"></div>
+
+## 7. Questions Left Unanswered
+
+From the guide, we actually left a few questions unanswered:
+1. Why the `num_heads != num_key_value_heads`? (hint: Group Query Attention)
+2. Why some of the weight layers are Column Parallel and some are Row Parallel? (hint: Model Parallelism, Avoid Communication Overhead)
+3. What is RMS Norm?
+4. What is Gate and Up Projection?
+
+I'll leave these questions for future posts.
+
+<div class="divider"></div>
