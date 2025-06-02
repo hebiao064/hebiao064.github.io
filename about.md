@@ -7,7 +7,7 @@ Hello,
 
 My name is **Biao He**, a software engineer with passion for building large scale and efficient ML systems. I'm currently working on the AI Platform team at LinkedIn, where I'm responsible for building the training infrastructure that powers the company's recommendation and large language models.
 
-I'm also an open source enthusiast and have contributed to several projects, including [SGLang](https://github.com/sgl-project/sglang), [Liger-Kernel](https://github.com/linkedin/Liger-Kernel) and [Ray](https://github.com/ray-project/ray).
+I'm also an open source enthusiast and have contributed to several projects, including [SGLang](https://github.com/sgl-project/sglang), [Liger-Kernel](https://github.com/linkedin/Liger-Kernel) and [verl](https://github.com/volcengine/verl).
 
 The best way to reach me is via [LinkedIn](https://www.linkedin.com/in/biao-he/) or [SGLang Slack](https://sgl-fru7574.slack.com/).
 
