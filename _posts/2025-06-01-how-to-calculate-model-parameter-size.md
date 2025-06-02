@@ -112,37 +112,7 @@ model = AutoModelForCausalLM.from_pretrained(
     device_map="auto",
     trust_remote_code=True
 )
-
 print(model)
-
-Qwen3ForCausalLM(
-  (model): Qwen3Model(
-    (embed_tokens): Embedding(151936, 5120)
-    (layers): ModuleList(
-      (0-63): 64 x Qwen3DecoderLayer(
-        (self_attn): Qwen3Attention(
-          (q_proj): Linear(in_features=5120, out_features=8192, bias=False)
-          (k_proj): Linear(in_features=5120, out_features=1024, bias=False)
-          (v_proj): Linear(in_features=5120, out_features=1024, bias=False)
-          (o_proj): Linear(in_features=8192, out_features=5120, bias=False)
-          (q_norm): Qwen3RMSNorm((128,), eps=1e-06)
-          (k_norm): Qwen3RMSNorm((128,), eps=1e-06)
-        )
-        (mlp): Qwen3MLP(
-          (gate_proj): Linear(in_features=5120, out_features=25600, bias=False)
-          (up_proj): Linear(in_features=5120, out_features=25600, bias=False)
-          (down_proj): Linear(in_features=25600, out_features=5120, bias=False)
-          (act_fn): SiLU()
-        )
-        (input_layernorm): Qwen3RMSNorm((5120,), eps=1e-06)
-        (post_attention_layernorm): Qwen3RMSNorm((5120,), eps=1e-06)
-      )
-    )
-    (norm): Qwen3RMSNorm((5120,), eps=1e-06)
-    (rotary_emb): Qwen3RotaryEmbedding()
-  )
-  (lm_head): Linear(in_features=5120, out_features=151936, bias=False)
-)
 
 # Dictionary to store parameter counts per submodule
 param_groups = defaultdict(int)
