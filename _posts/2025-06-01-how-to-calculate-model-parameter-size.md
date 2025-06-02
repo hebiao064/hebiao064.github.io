@@ -1,4 +1,8 @@
-# How to Calculate LLM Model Parameter Size: Dense Model
+---
+title: How to Calculate LLM Model Parameter Size - Dense Model
+updated: 2025-06-01 11:11
+---
+
 
 This guide explains how to calculate the parameter size of a dense large language model (LLM) using its architecture and configuration file. We’ll use the Qwen3-32B model as an example to demonstrate the process.
 
