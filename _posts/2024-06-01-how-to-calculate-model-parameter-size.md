@@ -1,6 +1,6 @@
 ---
 title: How to Calculate LLM Model Parameter Size - Dense Model
-updated: 2025-06-01 11:11
+updated: 2024-06-01 11:11
 ---
 
 
