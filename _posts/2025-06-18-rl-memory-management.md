@@ -42,7 +42,7 @@ updated: 2025-06-18 11:11
 
 ## 1. Introduction
 
-As a machine learning enthusiast, I've been diving deep into reinforcement learning (RL) for large language models (LLMs). One of the most fascinating projects I've explored is veRL, a library designed for RL training of LLMs. It combines training strategies like Fully Sharded Data Parallel (FSDP) and Megatron-LM with inference engines like SGLang for rollout generation. RL training is unique because it blends inference and training in every step, which poses significant challenges for scalability and resource efficiency. In this blog post, I’ll share my journey into optimizing memory usage in veRL, focusing on techniques that reduce peak memory demands and enable training larger models on limited GPU resources.
+As a machine learning enthusiast, I've been diving deep into reinforcement learning (RL) for large language models (LLMs). One of the most fascinating projects I've explored is veRL, a library designed for RL training of LLMs. It combines training strategies like Fully Sharded Data Parallel (FSDP) and Megatron-LM with inference engines like SGLang for rollout generation. RL training is unique because it blends inference and training in every step, which poses significant challenges for scalability and resource efficiency. In this blog post, I’ll share the journey of how SGLang RL team optimized memory usage in veRL, focusing on techniques that reduce peak memory demands and enable training larger models on limited GPU resources.
 
 <div class="divider"></div>
 
