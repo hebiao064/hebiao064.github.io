@@ -79,6 +79,7 @@ for prompts, pretrain_batch in dataloader:
 Each step involves a rollout (inference) using the actor model, followed by training the actor model. A key design choice in veRL is keeping both the rollout and training versions of the actor model on the same GPUs (aka **Co-locate**), which optimizes resource sharing but complicates memory management. My focus here is on the actor model’s memory usage.
 
 
+<div class="divider"></div>
 
 
 ## 3. The Memory Challenge
@@ -110,6 +111,7 @@ During inference, the full model is typically loaded (not sharded):
 
 **Total Rollout Memory**: ~100-120 GB per GPU
 
+<div class="divider"></div>
 
 ## 4. Memory Optimization Journey
 
@@ -277,14 +279,13 @@ And here is the diagram of the multi-stage resume process:
 
 <div class="divider"></div>
 
-## 5. Conclusion and Future work
+
+## 5. Acknowledgments
+Many thanks to the SGLang RL Team — especially [Tom](https://github.com/fzyzcjy) for creating the small but powerful torch_memory_saver library and for laying much of the foundational work for VERL rollout with SGLang, and to [Chenyang](https://www.linkedin.com/in/chayennezhao/), who has led the SGLang RL efforts and provided invaluable guidance and support throughout.
+<div class="divider"></div>
 
 
-## 6. Acknowledgments
-
-
-
-## 7. Footnotes
+## 6. Footnotes
 
 [^1]: [LlamaRL Paper](https://arxiv.org/pdf/2505.24034)
 [^2]: [Torch Memory Saver: A PyTorch library that allows tensor memory to be temporarily released and resumed later](https://github.com/fzyzcjy/torch_memory_saver)
