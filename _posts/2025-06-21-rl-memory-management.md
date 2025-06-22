@@ -68,7 +68,7 @@ for prompts, pretrain_batch in dataloader:
     batch = reference.compute_log_prob(batch)
     batch = reward.compute_reward(batch)  # Reward function or model
     batch = compute_advantages(batch, algo_type)
-    # Stage 3: Actor and critic training
+    # Stage 3: Actor training
     actor_metrics = actor.update_actor(batch)
 ```
 Each iteration involves a rollout (inference) phase using the actor model, followed by training. [verl](https://github.com/volcengine/verl)'s design co-locates both the rollout and training versions of the actor model on the same GPUs, optimizing resource sharing but complicating memory management. This post focuses on addressing the actor model’s memory challenges.
