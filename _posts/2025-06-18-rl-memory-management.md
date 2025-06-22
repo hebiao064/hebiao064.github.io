@@ -46,11 +46,7 @@ Reinforcement learning (RL) for large language models (LLMs) presents unique cha
 
 <div class="divider"></div>
 
-## 2. Understanding RL Training in veRL
-
-<br>
-
-#### High-Level RL Training Workflow
+## 2. High-Level RL Training Workflow
 
 ![An example flow of online RL training](/assets/rl-memory-management/example-flow-diagram.png)
 
