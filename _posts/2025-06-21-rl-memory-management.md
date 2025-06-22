@@ -1,6 +1,6 @@
 ---
-title: Efficient RL Training - Optimizing Memory Usage in veRL (Draft)
-updated: 2025-06-18 11:11
+title: Efficient RL Training - Optimizing Memory Usage in verl
+updated: 2025-06-21 11:11
 ---
 
 
@@ -42,7 +42,7 @@ updated: 2025-06-18 11:11
 
 ## 1. Introduction
 
-Reinforcement learning (RL) for large language models (LLMs) presents unique challenges due to its integration of inference and training in each step, demanding significant scalability and resource efficiency. The veRL library, designed for RL training of LLMs, combines advanced training strategies like Fully Sharded Data Parallel (FSDP) and Megatron-LM with inference engines such as SGLang for efficient rollout generation. This blog post details the SGLang RL team’s efforts to optimize memory usage in veRL, focusing on techniques that reduce peak memory demands and enable training larger models on limited GPU resources.
+[Reinforcement learning](https://en.wikipedia.org/wiki/Reinforcement_learning) (RL) for large language models (LLMs) presents unique challenges due to its integration of inference and training in each step, demanding significant scalability and resource efficiency. The [verl](https://github.com/volcengine/verl) library, designed for RL training of LLMs, combines advanced training strategies like Fully Sharded Data Parallel ([FSDP](https://pytorch.org/docs/stable/fsdp.html)) and [Megatron-LM](https://github.com/NVIDIA/Megatron-LM) with inference engines such as [SGLang](https://github.com/sgl-project/sglang) for efficient rollout generation. This blog post details the SGLang RL team’s efforts to optimize memory usage in [verl](https://github.com/volcengine/verl), focusing on techniques that reduce peak memory demands and enable training larger models on limited GPU resources.
 
 <div class="divider"></div>
 
@@ -52,13 +52,13 @@ Reinforcement learning (RL) for large language models (LLMs) presents unique cha
 
 <br>
 
-The diagram above illustrates the **online RL training** proces, simplified by omitting the reference and critic models and assuming a basic reward function (common in code and reasoning tasks) instead of a reward model. The policy model exists in two instances: one optimized for training (using FSDP or Megatron-LM) and another for inference (using SGLang or vLLM).[^1]
+The diagram above illustrates the **online RL training** proces, simplified by omitting the reference and critic models and assuming a basic reward function (common in code and reasoning tasks) instead of a reward model. The policy model exists in two instances: one optimized for training (using [FSDP](https://pytorch.org/docs/stable/fsdp.html) or [Megatron-LM](https://github.com/NVIDIA/Megatron-LM)) and another for inference (using [SGLang](https://github.com/sgl-project/sglang) or [vLLM](https://github.com/vllm-project/vllm)).[^1]
 
 <br>
 
 #### Simplified PPO Example
 
-Below is a simplified implementation using Proximal Policy Optimization (PPO):
+Below is a simplified implementation using [Proximal Policy Optimization](https://en.wikipedia.org/wiki/Proximal_policy_optimization) (PPO):
 
 ```python
 for prompts, pretrain_batch in dataloader:
@@ -71,18 +71,18 @@ for prompts, pretrain_batch in dataloader:
     # Stage 3: Actor and critic training
     actor_metrics = actor.update_actor(batch)
 ```
-Each iteration involves a rollout (inference) phase using the actor model, followed by training. veRL’s design co-locates both the rollout and training versions of the actor model on the same GPUs, optimizing resource sharing but complicating memory management. This post focuses on addressing the actor model’s memory challenges.
+Each iteration involves a rollout (inference) phase using the actor model, followed by training. [verl](https://github.com/volcengine/verl)'s design co-locates both the rollout and training versions of the actor model on the same GPUs, optimizing resource sharing but complicating memory management. This post focuses on addressing the actor model’s memory challenges.
 
 <div class="divider"></div>
 
 
 ## 3. The Memory Challenge
 
-RL training in veRL requires seamless transitions between rollout and training phases, both of which are memory-intensive. Co-locating these phases on the same GPUs risks out-of-memory (OOM) errors, especially with large models. Below is the memory breakdown for **Qwen2.5-7B-Instruct** on an H200 GPU node (8 GPUs, ~141 GB VRAM each) using FSDP for training and SGLang for rollout.
+RL training in [verl](https://github.com/volcengine/verl) requires seamless transitions between rollout and training phases, both of which are memory-intensive. Co-locating these phases on the same GPUs risks out-of-memory (OOM) errors, especially with large models. Below is the memory breakdown for **[Qwen2.5-7B-Instruct](https://huggingface.co/Qwen/Qwen2.5-7B-Instruct)** on an H200 GPU node (8 GPUs, ~141 GB VRAM each) using [FSDP](https://pytorch.org/docs/stable/fsdp.html) for training and [SGLang](https://github.com/sgl-project/sglang) for rollout.
 
 #### Training Phase Memory Breakdown
 
-With FSDP sharding across 8 GPUs, each GPU holds:
+With [FSDP](https://pytorch.org/docs/stable/fsdp.html) sharding across 8 GPUs, each GPU holds:
 
 - **Model Weights (Sharded)**: ~1.9 GB (15.4 GB ÷ 8 GPUs)
 - **Gradients (Sharded)**: ~1.9 GB (same partitioning as weights)
@@ -111,18 +111,18 @@ Managing these memory demands on the same GPUs requires careful optimization to 
 
 ### 4.1: The Naive Approach
 
-In our initial approach, we kept both training model weights and the inference engine (SGLang) in GPU memory without offloading.
+In our initial approach, we kept both training model weights and the inference engine ([SGLang](https://github.com/sgl-project/sglang)) in GPU memory without offloading.
 
 ![v0: The Naive Approach](/assets/rl-memory-management/v0-naive-approach.png)
 
 
-However, SGLang’s significant memory footprint made it impossible to start training. This was a conceptual baseline and was never implemented.
+However, [SGLang](https://github.com/sgl-project/sglang)'s significant memory footprint made it impossible to start training. This was a conceptual baseline and was never implemented.
 
 <div class="divider"></div>
 
 ### 4.2: Offloading Weights to CPU and Relaunch Inference Engine
 
-To address this, we offloaded training model weights to CPU after training, serializing them to disk. During the rollout phase, we relaunched the SGLang engine, loading weights from disk.
+To address this, we offloaded training model weights to CPU after training, serializing them to disk. During the rollout phase, we relaunched the [SGLang](https://github.com/sgl-project/sglang) engine, loading weights from disk.
 
 ![v1: Offloading Weights to CPU and Relaunch Inference Engine](/assets/rl-memory-management/v1-offload-weights-to-cpu.png)
 
@@ -136,7 +136,7 @@ While this was an improvement, it was too slow for practical use.
 
 ### 4.3: Sleeping the Inference Engine
 
-We explored keeping the CUDA Graph alive while freeing weights and KV cache memory during training. The challenge was that recreating these tensors broke CUDA Graph replay due to changes in virtual memory addresses.
+We explored keeping the [CUDA Graph](https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#cuda-graph) alive while freeing weights and KV cache memory during training. The challenge was that recreating these tensors broke [CUDA Graph replay](https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#cuda-graph-replay) due to changes in virtual memory addresses.
 
 Hence the goal can be rephrased to:
 - Free physical memory during training to allocate space.
@@ -168,7 +168,7 @@ Before **CUDA 10.2**, memory management relied on `cudaMalloc`, `cudaFree`, and 
 - `cuMemAddressReserve`: Reserves a virtual address range.
 - `cuMemMap`: Maps a physical memory handle to a virtual address range.
 
-These APIs enabled a custom memory allocator to preserve virtual memory addresses. And in SGLang and verl system, we utilized `LD_PRELOAD` [^4] to replace the default cuda malloc and free with our custom allocator.
+These APIs enabled a custom memory allocator to preserve virtual memory addresses. And in [SGLang](https://github.com/sgl-project/sglang) and [verl](https://github.com/volcengine/verl) system, we utilized `LD_PRELOAD` [^4] to replace the default cuda malloc and free with our custom allocator.
 
 <br>
 
@@ -218,10 +218,7 @@ To address slow weight loading, we avoided disk serialization. Instead, we loade
 
 ### 4.4: Multi-Stage Awake
 
-Despite these improvements, our users reported Out-of-Memory (OOM) errors during training-rollout switches with larger models or high KV cache ratios (>0.7). We identified wasted memory during the resume process (red block in the above diagram).
-To optimize, we split the resume process into stages:
-
-To optimize, we split the resume process into stages:
+Despite these improvements, our users reported Out-of-Memory (OOM) errors during training-rollout switches with larger models or high KV cache ratios (>0.7). We identified wasted memory during the resume process (red block in the above diagram). To optimize, we split the resume process into stages:
 
 1. Load training model weights onto the GPU.
 2. Resume the inference model weights.
@@ -234,9 +231,9 @@ Initially, `torch_memory_saver`’s singleton design didn’t support selective 
 - Multiple `torch_memory_saver` instances.
 - A tag-based pause/resume API.
 
-We chose the tag-based approach for minimal changes to SGLang’s codebase, which relied heavily on the singleton design. See the [RFC](https://github.com/sgl-project/sglang/issues/7009) for implementation details.
+We chose the tag-based approach for minimal changes to SGLang’s codebase, which relied heavily on the singleton design. You can find both implementations in the [RFC](https://github.com/sgl-project/sglang/issues/7009) for implementation details.
 
-We decided to implement the tag-based approach, which would incur less changes to the SGLang codebase which utilied the singleton torch memory saver in many files.
+<br>
 
 #### Tag-Based Memory Management
 
