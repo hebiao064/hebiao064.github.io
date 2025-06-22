@@ -147,7 +147,9 @@ The SGLang RL team (credit to [Tom](https://github.com/fzyzcjy)) developed the [
 Here’s how it works:
 
 ```python
-from torch_memory_saver import memory_saver
+import torch_memory_saver
+
+memory_saver = torch_memory_saver.torch_memory_saver
 
 # Create tensors in a pausable region
 with memory_saver.region():
@@ -251,6 +253,10 @@ We added a tag parameter to tensor metadata, enabling selective pausing/resuming
 **New Interface:**
 
 ```python
+import torch_memory_saver
+
+memory_saver = torch_memory_saver.torch_memory_saver
+
 # Create tensors with specific tags
 with torch_memory_saver.region(tag="weights"):
     tensor1 = torch.full((5_000_000_000,), 100, dtype=torch.uint8, device='cuda')
