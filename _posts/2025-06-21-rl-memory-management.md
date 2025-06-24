@@ -82,15 +82,11 @@ RL training in [verl](https://github.com/volcengine/verl) requires seamless tran
 
 #### Training Phase Memory Breakdown
 
-With [FSDP](https://pytorch.org/docs/stable/fsdp.html) sharding across 8 GPUs, each GPU holds:
+With [FSDP](https://pytorch.org/docs/stable/fsdp.html) sharding across 8 GPUs, and enable FULLY SHARDED mode with Full Activation Checkpointing, each GPU holds:
 
-- **Model Weights (Sharded)**: ~1.9 GB (15.4 GB ÷ 8 GPUs)
-- **Gradients (Sharded)**: ~1.9 GB (same partitioning as weights)
-- **Optimizer States (Sharded)**: ~3.9 GB (30.8 GB ÷ 8 GPUs for AdamW)
-- **Activations**: ~15-30 GB (not sharded, varies with batch size, sequence length, and model architecture)
-- **Temporary All-gather**: ~15.4 GB (during forward/backward, full parameters temporarily reconstructed)
+![training phase memory breakdown](/assets/rl-memory-management/fsdp_memory_breakdown.png)
 
-**Peak Training Memory**: ~38-53 GB per GPU
+**Peak Training Memory**: ~48 GB per GPU
 
 #### Rollout Phase Memory Breakdown
 
