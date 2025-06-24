@@ -299,5 +299,5 @@ We extend our gratitude to the SGLang RL Team and verl Team, with special thanks
 
 [^1]: [LlamaRL Paper](https://arxiv.org/pdf/2505.24034)
 [^2]: [Torch Memory Saver: A PyTorch library that allows tensor memory to be temporarily released and resumed later](https://github.com/fzyzcjy/torch_memory_saver)
-[^3]: [CUDA 10.2: Introducing Low-Level GPU Virtual Memory Management](https://developer.nvidia.com/blog/cuda-10-2-introducing-low-level-gpu-virtual-memory-management/)
+[^3]: [CUDA 10.2: Introducing Low-Level GPU Virtual Memory Management](https://developer.nvidia.com/blog/introducing-low-level-gpu-virtual-memory-management/)
 [^4]: [LD_PRELOAD](https://catonmat.net/simple-ld-preload-tutorial)
