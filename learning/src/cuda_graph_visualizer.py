@@ -1,3 +1,5 @@
+# Adapted from https://zhuanlan.zhihu.com/p/700224642
+
 import torch
 from contextlib import contextmanager
 import os
@@ -24,7 +26,7 @@ def graph_capture(pool=None, stream=None, capture_error_mode: str = "global", du
         g.debug_dump(dump_file)
 
 # Simple test
-MAX_BATCHSIZE = 4
+MAX_BATCHSIZE = 128
 
 # Placeholder input used for capture
 static_a = torch.zeros((MAX_BATCHSIZE, 10), device="cpu").pin_memory()
