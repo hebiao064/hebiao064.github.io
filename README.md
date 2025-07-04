@@ -22,7 +22,7 @@ bundle _2.0.2_ exec jekyll serve
 
 ```bash
 git push
-# git push is enough, a Github CI will trigger the page build
+# git push is enough, a Github CI will trigger the page build automatically
 ```
 
 ## License
