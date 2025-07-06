@@ -116,3 +116,20 @@ if __name__ == "__main__":
     # Run Simple Forward Before Training
     run_single_token_forward()
     run_single_token_forward_with_tokenizer()
+
+
+"""
+This script added support of:
+1. Add naive GPT Model
+2. Support Single Token Forward
+3. Support Single Token Forward with Tokenizer
+
+
+TODO:
+1. Add a loss function to the GPT Model
+2. Add a training loop to the GPT Model
+3. Support Attention Masking for Training
+4. Support Attention Masking for Inference
+5. Support Auto-regressive Inference
+6. Support KV Cache for Inference
+"""

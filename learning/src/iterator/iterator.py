@@ -170,6 +170,9 @@ class TreeIterator:
         return node.value
 
 
+class NaiveIterator:
+    
+
 # 使用示例和测试
 def main():
     print("=== Iterator Examples ===\n")
@@ -246,34 +249,5 @@ def main():
         print(f"    第{i}个: {fib}")
 
 
-class NaiveIterator:
-    def __init__(self, start: int, end: int):
-        self.start = start
-        self.end = end
-        self.current = start
-    
-    def __iter__(self):
-        return self
-    
-    def __next__(self):
-        if self.current >= self.end:
-            raise StopIteration
-        return_value = self.current
-        self.current += 1
-        return return_value
-
-def gen_test():
-    for i in range(1, 5):
-        yield i
-
 if __name__ == "__main__":
     main() 
-     # 0. 我写的Iterator
-    print("0. 我写的Iterator:")
-    for num in NaiveIterator(1, 5):
-        print(f"  {num}")
-
-    generator = gen_test()
-    print(generator.__next__())
-    print(generator.__next__())
-    
