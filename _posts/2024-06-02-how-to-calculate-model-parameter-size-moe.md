@@ -4,6 +4,24 @@ updated: 2024-06-02 11:11
 ---
 
 
+<div class="authors-section" style="display: flex; justify-content: center; margin: 40px 0; gap: 40px;">
+  <div style="margin: 0 0 5px 0; font-size: 18px; font-weight: 500;"><p>Authored by</p></div>
+  <!-- Author 1 -->
+  <div class="author-card" style="display: flex; flex-direction: column; align-items: center; max-width: 200px; text-align: center;">
+    <h3 style="margin: 0 0 5px 0; font-size: 18px; font-weight: 500;">Binyao Jiang</h3>
+    <div class="author-social" style="display: flex; gap: 12px; margin-top: 5px;">
+      <a href="https://www.linkedin.com/in/byjiang1996/" target="_blank" style="text-decoration: none; border: none;">
+        <img src="https://cdn.jsdelivr.net/npm/simple-icons@v8/icons/linkedin.svg" alt="LinkedIn" style="width: 18px; height: 18px; filter: invert(30%);">
+      </a>
+      <a href="https://github.com/byjiang1996" target="_blank" style="text-decoration: none; border: none;">
+        <img src="https://cdn.jsdelivr.net/npm/simple-icons@v8/icons/github.svg" alt="GitHub" style="width: 18px; height: 18px; filter: invert(30%);">
+      </a>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
 This guide explains how to calculate the parameter size of a Mixture of Experts (MoE) large language model (LLM) using its architecture and configuration file. We’ll use the Qwen3-30B-A3B model as an example to demonstrate the process.
 
 
