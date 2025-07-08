@@ -110,14 +110,18 @@ class GPT(nn.Module):
             past_kv_cache = [None] * len(self.module_list)
 
         offset = past_kv_cache[0][0].size(2) if (past_kv_cache is not None and past_kv_cache[0] is not None) else 0
-        print(f"offset: {offset}")
+        # print(f"offset: {offset}")
         seq_len = x.size(1) if x.ndim == 2 else 1
         x = self.emb(x) + self.pos_emb[:, offset:seq_len + offset, :]
 
         new_kv_cache = []
         for i, block in enumerate(self.module_list):
-            x, new_kv_cache_tuple = block(x, attention_mask=attention_mask, past_kv_cache_tuple=past_kv_cache[i])
-            new_kv_cache.append(new_kv_cache_tuple)
+            if enable_kv_cache:
+                x, new_kv_cache_tuple = block(x, attention_mask=attention_mask, past_kv_cache_tuple=past_kv_cache[i])
+                new_kv_cache.append(new_kv_cache_tuple)
+            else:
+                x, _ = block(x, attention_mask=attention_mask)
+                new_kv_cache.append(None)
         
         x = self.norm(x)
         output_vocab = self.lm_head(x)
@@ -133,7 +137,7 @@ class GPT(nn.Module):
     def loss(self, tokens, attention_mask=None):
         inputs = tokens[:, :-1] # (batch, seq_len - 1) 
         labels = tokens[:, 1:] # (batch, seq_len - 1)
-        logits = self.forward(inputs) # (batch, seq_len - 1, vocab_size)
+        logits, _ = self.forward(inputs, enable_kv_cache=False) # (batch, seq_len - 1, vocab_size)
 
         if attention_mask is not None:
             valid_mask_indices = attention_mask[:, 1:].reshape(-1)
