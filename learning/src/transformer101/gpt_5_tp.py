@@ -3,14 +3,79 @@ from torch import nn
 from math import sqrt
 from transformers import AutoTokenizer
 from torch.nn import functional as F
+import torch.distributed as dist
+import torch.multiprocessing as mp
 
+
+class ColumnParallelLinear(nn.Module):
+    def __init__(self, input_size, output_size, tp_rank, tp_size, process_group=None):
+        super().__init__()
+        self.input_size = input_size
+        self.output_size = output_size
+        self.tp_rank = tp_rank
+        self.tp_size = tp_size
+        self.output_size_per_rank = output_size // tp_size
+        
+        # 权重形状：(output_size_per_rank, input_size)
+        self.weight = nn.Parameter(torch.randn(self.output_size_per_rank, input_size))
+        self.bias = nn.Parameter(torch.randn(self.output_size_per_rank))
+        self.process_group = process_group or torch.distributed.group.WORLD
+        
+        if tp_rank == 0:  # 只在rank 0上打印
+            print(f"ColumnParallelLinear: {input_size} -> {output_size} (per_rank: {self.output_size_per_rank})")
+    
+    def forward(self, inputs):
+        # 计算当前rank的部分输出
+        output_partial = torch.matmul(inputs, self.weight.t()) + self.bias
+        
+        # All-gather收集所有rank的输出
+        output_list = [torch.empty_like(output_partial) for _ in range(self.tp_size)]
+        torch.distributed.all_gather(output_list, output_partial, group=self.process_group)
+        
+        # 在最后一个维度上连接
+        return torch.cat(output_list, dim=-1)
+    
+class RowParallelLinear(nn.Module):
+    def __init__(self, input_size, output_size, tp_rank, tp_size, process_group=None):
+        super().__init__()
+        self.input_size = input_size
+        self.output_size = output_size
+        self.tp_size = tp_size
+        self.tp_rank = tp_rank
+        self.input_size_per_rank = input_size // tp_size
+        
+        # 权重形状：(output_size, input_size_per_rank)
+        self.weight = nn.Parameter(torch.randn(output_size, self.input_size_per_rank))
+        self.bias = nn.Parameter(torch.randn(output_size))
+        self.process_group = process_group or torch.distributed.group.WORLD
+        
+        if tp_rank == 0:  # 只在rank 0上打印
+            print(f"RowParallelLinear: {input_size} -> {output_size} (per_rank: {self.input_size_per_rank})")
+    
+    def forward(self, inputs: torch.Tensor, is_input_paralled: bool = False):
+        if not is_input_paralled:
+            # 切分输入张量
+            start_idx = self.input_size_per_rank * self.tp_rank
+            end_idx = self.input_size_per_rank * (self.tp_rank + 1)
+            inputs_partial = inputs[:, :, start_idx:end_idx]  # 3D张量切片
+        else:
+            inputs_partial = inputs
+        
+        # 矩阵乘法
+        outputs = torch.matmul(inputs_partial, self.weight.t())
+        
+        # All-reduce求和
+        torch.distributed.all_reduce(outputs, torch.distributed.ReduceOp.SUM, group=self.process_group)
+        
+        return outputs + self.bias
+                                      
 class TransformerBlock(nn.Module):
-    def __init__(self, hidden_dim: int):
+    def __init__(self, hidden_dim: int, tp_rank=0, tp_size=1):
         super().__init__() 
 
         self.norm_1 = nn.LayerNorm(hidden_dim) # layer norm is learnable
         self.norm_2 = nn.LayerNorm(hidden_dim)
-        self.attn = SelfAttention(hidden_dim=hidden_dim)
+        self.attn = SelfAttention(hidden_dim=hidden_dim, tp_rank=tp_rank, tp_size=tp_size)
 
         # FFN is a special MLP used by Transformer Models like GPT, LLama
         self.mlp = nn.Sequential(
@@ -27,13 +92,25 @@ class TransformerBlock(nn.Module):
         return x, new_kv_cache_tuple
         
 class SelfAttention(nn.Module):
-    def __init__(self, hidden_dim, num_heads=8):
+    def __init__(self, hidden_dim, num_heads=8, tp_rank=0, tp_size=1):
         super().__init__()
 
-        self.q_proj = nn.Linear(hidden_dim, hidden_dim)
-        self.k_proj = nn.Linear(hidden_dim, hidden_dim)
-        self.v_proj = nn.Linear(hidden_dim, hidden_dim)
-        self.o_proj = nn.Linear(hidden_dim, hidden_dim)
+        # self.q_proj = nn.Linear(hidden_dim, hidden_dim)
+        # self.k_proj = nn.Linear(hidden_dim, hidden_dim)
+        # self.v_proj = nn.Linear(hidden_dim, hidden_dim)
+        # self.o_proj = nn.Linear(hidden_dim, hidden_dim)
+        if tp_size > 1:
+            # 使用tensor parallel
+            self.q_proj = ColumnParallelLinear(hidden_dim, hidden_dim, tp_rank=tp_rank, tp_size=tp_size, process_group=dist.group.WORLD)
+            self.k_proj = ColumnParallelLinear(hidden_dim, hidden_dim, tp_rank=tp_rank, tp_size=tp_size, process_group=dist.group.WORLD)
+            self.v_proj = ColumnParallelLinear(hidden_dim, hidden_dim, tp_rank=tp_rank, tp_size=tp_size, process_group=dist.group.WORLD)
+            self.o_proj = RowParallelLinear(hidden_dim, hidden_dim, tp_rank=tp_rank, tp_size=tp_size, process_group=dist.group.WORLD)
+        else:
+            # 单GPU情况，使用普通Linear
+            self.q_proj = nn.Linear(hidden_dim, hidden_dim)
+            self.k_proj = nn.Linear(hidden_dim, hidden_dim)
+            self.v_proj = nn.Linear(hidden_dim, hidden_dim)
+            self.o_proj = nn.Linear(hidden_dim, hidden_dim)
 
         self.num_heads = num_heads
         self.head_dim = hidden_dim // num_heads
@@ -59,8 +136,6 @@ class SelfAttention(nn.Module):
         # to (batch, num_heads, seq, head_dim)
         # to faciliate attention calculation
         q_value = self.q_proj(x).view(batch_size, seq_len, self.num_heads, self.head_dim).transpose(1, 2)
-        # k_value = self.k_proj(x).view(batch_size, seq_len, self.num_heads, self.head_dim).transpose(1, 2)
-        # v_value = self.v_proj(x).view(batch_size, seq_len, self.num_heads, self.head_dim).transpose(1, 2)
 
         # q with shape (batch, num_heads, seq, head_dim) 
         # cannot muliply with k (batch, num_heads, seq, head_dim)
@@ -75,12 +150,14 @@ class SelfAttention(nn.Module):
             attention_mask = attention_mask.unsqueeze(1).unsqueeze(2)
             # Expand to (batch, 1, seq_len, seq_len) for broadcasting
             attention_mask = attention_mask.expand(batch_size, 1, seq_len, seq_len)
+            # Convert to boolean before combining with causal_mask
+            attention_mask = attention_mask.bool()
             # Apply mask: set padded positions to -inf
             combined_mask = causal_mask & attention_mask
         else:
             combined_mask = causal_mask
 
-        attn = torch.where(causal_mask, attn, torch.zeros_like(attn) - torch.inf)
+        attn = torch.where(combined_mask, attn, torch.zeros_like(attn) - torch.inf)
         attn = torch.softmax(attn, -1)
 
         y = torch.matmul(attn, v_value)
@@ -89,16 +166,22 @@ class SelfAttention(nn.Module):
         y = y.transpose(1, 2)
         y = y.reshape(batch_size, seq_len, hidden_dim)
         
-        o = self.o_proj(y)
+        # Apply output projection
+        # 对于RowParallelLinear，需要传递is_input_paralled=True，因为QKV的输出已经是并行的
+        if hasattr(self.o_proj, 'tp_size') and self.o_proj.tp_size > 1:
+            o = self.o_proj(y, is_input_paralled=False)  # y is full tensor, not parallel
+        else:
+            o = self.o_proj(y)
+            
         return o, (k_value, v_value)
 
 class GPT(nn.Module):
-    def __init__(self, context_len=1024, vocab_size=50257, hidden_dim=768):
+    def __init__(self, context_len=1024, vocab_size=50257, hidden_dim=768, tp_rank=0, tp_size=1):
         super().__init__()
         self.emb = nn.Embedding(vocab_size, hidden_dim)
         self.pos_emb = nn.Parameter(torch.rand(1, context_len, hidden_dim))
         # 或者 self.pos_emb = nn.Embedding(context_len, hidden_dim)
-        self.module_list = nn.ModuleList([TransformerBlock(hidden_dim=hidden_dim) for _ in range(12)])
+        self.module_list = nn.ModuleList([TransformerBlock(hidden_dim=hidden_dim, tp_rank=tp_rank, tp_size=tp_size) for _ in range(12)])
         self.norm = nn.LayerNorm(hidden_dim)
         self.lm_head = nn.Linear(hidden_dim, vocab_size)
     
@@ -160,31 +243,34 @@ class GPT(nn.Module):
 '''
 
 def run_single_token_forward(model):
-    
+    # 创建输入数据（每个rank都需要相同的输入）
+    torch.manual_seed(42)  # 确保所有rank生成相同的随机数据
     input_ids = torch.randint(0, 10000, (2, 128))  # batch=2, seq_len=128
+    
+    # 前向传播（每个rank都参与计算）
     output, _ = model(input_ids)
-    print("Output shape:", output.shape)  # (2, 128, vocab_size)
+    
+    # 只在rank 0上打印结果
+    if dist.get_rank() == 0:
+        print(f"Output shape: {output.shape}")  # (2, 128, vocab_size)
 
 def run_single_token_forward_with_tokenizer(model, tokenizer):
-    # tokenizer = AutoTokenizer.from_pretrained("/home/jobuser/.cache/huggingface/hub/models--openai-community--gpt2-xl/snapshots/15ea56dee5df4983c59b2538573817e1667135e2/")
-    # for kv cache simple implementation, we limit the input to be the same length
+    # 这个函数只在rank 0上运行，因为它主要用于展示
     input_texts = ["Once upon a time, there was a magical forest",
                     "Once upon a time, there was a magical forest"]
     
-    input = tokenizer(input_texts, 
+    input_batch = tokenizer(input_texts, 
                       return_tensors="pt", 
                       padding="longest")
 
-    attention_mask = input["attention_mask"]
-    # 获取真实输入的长度（即非 pad 的 token 数）
+    attention_mask = input_batch["attention_mask"]
     real_lens = attention_mask.sum(dim=1)
 
-    model = GPT(context_len=128, vocab_size=tokenizer.vocab_size, hidden_dim=512)
-    outputs, _ = model(input.input_ids, attention_mask=attention_mask)
-    print("Output shape:", outputs.shape)
+    # 使用已有的model，不要重新创建
+    outputs, _ = model(input_batch.input_ids, attention_mask=attention_mask)
+    print(f"Output shape: {outputs.shape}")
     
-    # 获取该位置的预测
-    predicted_ids = []
+    # 获取预测结果
     for i in range(len(real_lens)):
         predicted_id = torch.argmax(outputs[i, real_lens[i] - 1])
         print(f"Original text + Predicted token: {input_texts[i] + tokenizer.decode([predicted_id.item()])}")
@@ -247,42 +333,70 @@ def train(model: nn.Module, tokenizer: AutoTokenizer):
 
     return model
 
+def main(rank, world_size):
+    # 1. 初始化分布式进程组
+    dist.init_process_group(
+        backend="gloo",
+        init_method="tcp://127.0.0.1:29500",  # 本地单机
+        rank=rank,
+        world_size=world_size,
+    )
 
-if __name__ == "__main__":
-    # A Simple GPT Model with random weights
+    # 2. 测试分布式通信
+    tensor = torch.ones(2)
+    if rank == 0:
+        print(f"[Rank {rank}] before all_reduce: {tensor}")
+    
+    # 3. all-reduce（求和）
+    dist.all_reduce(tensor, op=dist.ReduceOp.SUM)
+    if rank == 0:
+        print(f"[Rank {rank}] after all_reduce: {tensor}")
+
+    # 4. 只在rank 0上加载tokenizer
+    if rank == 0:
+        print("Loading tokenizer and creating model...")
+        
     tokenizer = AutoTokenizer.from_pretrained("openai-community/gpt2-xl")
     tokenizer.pad_token = tokenizer.eos_token
-    model = GPT(context_len=128, vocab_size=tokenizer.vocab_size, hidden_dim=512)
-
-    # Run Simple Forward Before Training
-    print("="*100)
-    print("Run Simple Forward Before Training")
+    
+    # 5. 创建模型（传递正确的tp参数）
+    model = GPT(context_len=128, vocab_size=tokenizer.vocab_size, hidden_dim=512, tp_rank=rank, tp_size=world_size)
+    
+    # 6. 同步所有进程
+    dist.barrier()
+    
+    if rank == 0:
+        print("="*100)
+        print("Run Simple Forward Before Training")
+        
+    # 7. 运行测试（每个rank都需要参与计算）
     run_single_token_forward(model)
-    run_single_token_forward_with_tokenizer(model, tokenizer)
+    
+    dist.barrier()
+    # 只在rank 0上打印详细信息
+    if rank == 0:
+        print("="*100)
+        print("Run Simple Forward Before Training")
 
-    # Run Auto-regressive Inference before training
+    # 8. 运行测试（每个rank都需要参与计算）
+    run_single_token_forward_with_tokenizer(model, tokenizer)
+    dist.barrier()
+
+    # 9. Run Auto-regressive Inference before training
     print("="*100)
     print("Run Auto-regressive Inference before training")
     generate(model, tokenizer, ["China is a country in ", "China is a country in "], max_new_tokens=10)
 
-    # Run Training
-    print("="*100)
-    print("Run Training")
-    model = train(model, tokenizer)
+    # 10. 清理
+    dist.destroy_process_group()
 
 
-    # Run Single Token Forward After Training
-    print("="*100)
-    print("Run Single Token Forward After Training")
-    run_single_token_forward(model)
-    run_single_token_forward_with_tokenizer(model, tokenizer)
-
-    # Run Auto-regressive Inference after training
-    generate(model, tokenizer, ["China is a country in ", "China is a country in "], max_new_tokens=10)
-
+if __name__ == "__main__":
+    world_size = 2
+    mp.spawn(main, args=(world_size,), nprocs=world_size, join=True)
 
 
 """
 This script added support of:
-1. Support Tensor Parallelism for Inference
+1. Support KV Cache for Inference
 """
