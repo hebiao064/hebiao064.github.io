@@ -109,7 +109,7 @@ if __name__ == "__main__":
     scheduler = Scheduler()
     scheduler.start()
 
-    # in the next 10 seconds, we send request randomly
+    # we send request randomly to mimic the online traffic
     for i in range(10):
         time.sleep(random.uniform(0.1, 0.3))
         scheduler.add_request(
