@@ -55,20 +55,22 @@ updated: 2025-08-27 11:11
 
 ## 1. What is slime?
 
-slime is a LLM post-training framework aiming for RL Scaling, it was designed to be:
+[slime](https://github.com/THUDM/slime) is a LLM post-training framework aiming for RL Scaling, it was designed to be:
 
 - **Versatile** – with a fully customizable rollout interface and flexible training setups (colocated or decoupled, synchronous or asynchronous, RL or SFT cold start).
 - **Performant** - integrating SGLang for inference and Megatron-LM for training, natively.
-- **Maintainable** - with a lightweight codebase and smooth transition from Megatron pretraining to SGLang deployment.
+- **Maintainable** - with a lightweight codebase and smooth transition from Megatron pretraining to SGLang deployment.[^1]
 
 <br>
 ![What is slime?](/assets/slime/weight_sync/slime_overview.png)
 <br>
-The system consists of three core modules:
-**Training (Megatron)** – handles the main training process, reads data from the Data Buffer, and
-synchronizes parameters with the rollout module after training; **Rollout (SGLang + Router)** –
-generates new data, including rewards and verifier outputs, and writes it to the Data Buffer; **Data
-Buffer** – serves as a bridge module that manages prompt initialization, custom data, and rollout
+The system consists of three core modules[^2]:
+
+- **Training (Megatron)** – handles the main training process, reads data from the Data Buffer, and
+synchronizes parameters with the rollout module after training
+- **Rollout (SGLang + Router)** –
+generates new data, including rewards and verifier outputs, and writes it to the Data Buffer
+- **Data Buffer** – serves as a bridge module that manages prompt initialization, custom data, and rollout
 generation strategies.
 
 <div class="divider"></div>
@@ -79,16 +81,16 @@ generation strategies.
 ![What is weight sync?](/assets/slime/weight_sync/what_is_weight_sync.png)
 <br>
 
-**Weight sync** in LLM reinforcement learning (RL) refers to the process of **copying updated model weights from the training side to the inference side** so that inference workers (used for generating samples, evaluations, or environment rollouts) always use up-to-date parameters. 
+**Weight sync** in LLM reinforcement learning (RL) refers to the process of **copying updated model weights from the training side to the inference side** so that inference workers always use up-to-date parameters. 
 
 
 ### Why do we need it?
 
 In RL for LLMs (e.g., PPO, GRPO):
 
-1. **Training engine** (on GPUs or distributed nodes) updates weights every optimization step.
-2. **Inference engine** (another process or cluster) generates rollouts, samples actions, or evaluates policies, but it must use the **latest policy weights** to stay consistent with training.
-3. These two components often run separately (different processes, nodes, or even different frameworks like Megatron/FSDP vs. SGLang/vLLM), so **explicit synchronization is required**.
+1. **Training engine** updates weights every optimization step.
+2. **Inference engine** generates rollouts, samples actions, but it needs to use the **latest policy weights** to stay consistent with training.
+3. These two components often run separately (different processes and different frameworks like Megatron/FSDP vs. SGLang/vLLM), so **explicit synchronization is required**.
 
 
 <div class="divider"></div>
@@ -114,19 +116,20 @@ The weight sync process involves sophisticated cross-process GPU memory sharing.
 ### Why Server-Based Architecture?
 We chose SGLang's server-based approach over direct engine integration for several key reasons:
 
-1. **Decoupling**: Clean separation between training and inference processes enables independent optimization of both systems.
-2. **Scalability**: Native compatibility with SGLang Router enables load balancing across multiple inference nodes and maximizes Radix cache utilization.
-3. **Reliability**: Simplified error handling and recovery compared to tightly coupled process architectures.
+1. **Decoupling**: Clean separation between training and inference processes, hence we can maximize the performance of both sides.
+2. **Scalability**: Native compatible with SGLang Router, which can do Router-based load balancing across multiple inference nodes to maximize the utilization of KV Cache.
+3. **Reliability**: Easier error handling and recovery vs tight process coupling.
 
 <div class="divider"></div>
+
 ## 4. Our optimization journey: From 60s to 7s
 
 ![Our optimization journey](/assets/slime/weight_sync/our_optimization_journey.png)
 
 
-Through this optimization journey, we've adopted many techniques that we'll discuss in detail below, using the QWen3-30B-A3B model as our reference example.
+Through this optimization journey, we've adopted many techniques that we'll discuss in detail below. And we will be using QWen3-30B-A3B model as an example for the following blog.
 
-> **Note**: The latency numbers shown are simulated based on our series of PRs to illustrate the optimization logic clearly. In reality, we didn't implement improvements in the exact order shown above. A reproducible benchmark setup is available [here](https://gist.github.com/hebiao064/335ac5b44237af8f9514bb37fb216035) for 8 H100 GPUs.
+> **Note**: The latency number was simulated according to the series of PRs[^3] to make it easier to understand the logic, in reality, we didn't follow the order of improvement like the graph shown above. And reproducible setup can be found [here](https://gist.github.com/hebiao064/335ac5b44237af8f9514bb37fb216035) with 8 H100 GPUs.
 
 <div class="divider"></div>
 
@@ -201,7 +204,7 @@ for handle in handles:
 
 Code Reference: [slime/backends/megatron_utils/update_weight_utils.py](https://github.com/THUDM/slime/blob/main/slime/backends/megatron_utils/update_weight_utils.py#L59-L123)
 
-Related PRs: [https://github.com/THUDM/slime/pull/135](https://github.com/THUDM/slime/pull/135)
+**Related PRs**: [https://github.com/THUDM/slime/pull/135](https://github.com/THUDM/slime/pull/135)
 
 
 
@@ -225,7 +228,7 @@ for name, tensor in named_tensors.items():
 
 #### The Solution: Tensor Bucketing
 
-The key insight is to intelligently group parameters into optimally-sized buckets before transmission. Here's our production implementation [Code](https://github.com/THUDM/slime/blob/e943681211e2b230f2a34efd9793e1257c2d70c7/slime/backends/megatron_utils/update_weight_utils.py#L277-L332):
+The key insight is to intelligently group parameters into optimally-sized buckets before transmission. Here's our production implementation:
 
 ```python
 def get_param_info_buckets(args, model) -> list[list[ParamInfo]]:
@@ -380,10 +383,8 @@ Several exciting optimization opportunities remain:
 <div class="divider"></div>
 
 
-
 ## 6. References
 
-[^1]: [LlamaRL Paper](https://arxiv.org/pdf/2505.24034)
-[^2]: [Torch Memory Saver: A PyTorch library that allows tensor memory to be temporarily released and resumed later](https://github.com/fzyzcjy/torch_memory_saver)
-[^3]: [CUDA 10.2: Introducing Low-Level GPU Virtual Memory Management](https://developer.nvidia.com/blog/introducing-low-level-gpu-virtual-memory-management/)
-[^4]: [LD_PRELOAD](https://catonmat.net/simple-ld-preload-tutorial)
+[^1]: [slime: An SGLang-Native Post-Training Framework for RL Scaling](https://lmsys.org/blog/2025-07-09-slime/)
+[^2]: [GLM-4.5: Agentic, Reasoning, and Coding (ARC) Foundation Models](https://arxiv.org/pdf/2508.06471)
+[^3]: [slime Issue #132: Weight Sync Optimization in Colocate Mode](https://github.com/THUDM/slime/issues/132)
