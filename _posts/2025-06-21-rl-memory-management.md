@@ -290,7 +290,7 @@ Through the optimizations outlined in this journey, we successfully enabled trai
 
 ## 6. Acknowledgments
 
-We extend our gratitude to the SGLang RL Team and verl Team, with special thanks to [Tom](https://github.com/fzyzcjy) for developing the compact yet powerful `torch_memory_saver` library and laying the groundwork for VERL rollout with SGLang and [Chenyang](https://www.linkedin.com/in/chayennezhao/) for leading the SGLang RL initiatives and providing critical guidance and support.
+We extend our gratitude to the SGLang RL Team and verl Team, with special thanks to [Tom](https://github.com/fzyzcjy) for developing the compact yet powerful `torch_memory_saver` library and laying the groundwork for verl rollout with SGLang and [Chenyang](https://www.linkedin.com/in/chayennezhao/) for leading the SGLang RL initiatives and providing critical guidance and support.
 
 <div class="divider"></div>
 
