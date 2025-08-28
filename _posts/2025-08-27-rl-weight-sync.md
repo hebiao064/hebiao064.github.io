@@ -106,7 +106,7 @@ The weight sync process involves sophisticated cross-process GPU memory sharing.
 
 1. **Gather distributed tensors**: Collect model weights from distributed workers across PP/TP/EP/ETP ranks in the Megatron training process. [Code](https://github.com/THUDM/slime/blob/e943681211e2b230f2a34efd9793e1257c2d70c7/slime/backends/megatron_utils/update_weight_utils.py#L334-L399)
 2. **Serialize to CUDA IPC**: Convert tensors into CUDA IPC handlers and aggregate them into transfer-ready buckets. [Code](https://github.com/THUDM/slime/blob/e943681211e2b230f2a34efd9793e1257c2d70c7/slime/backends/megatron_utils/update_weight_utils.py#L402-L416)
-3. **API communication**: Send serialized tensor data to SGLang server via the `update_weight_by_tensor` endpoint. [Code](https://github.com/THUDM/slime/blob/main/slime/backends/sglang_utils/sglang_engine.py#L151-L171)
+3. **API communication**: Send serialized tensor data to SGLang server via the `update_weights_from_tensor` endpoint. [Code](https://github.com/THUDM/slime/blob/main/slime/backends/sglang_utils/sglang_engine.py#L151-L171)
 4. **Distribute to workers**: Scatter CUDA IPC handlers across SGLang's tensor parallel workers. [Code](https://github.com/sgl-project/sglang/blob/5343058875a7c07ad62cfef9681f26ffbe359859/python/sglang/srt/managers/tokenizer_manager.py#L1153-L1155)
 5. **Reconstruct and load**: Deserialize CUDA IPC handlers back to tensors and load the updated weights into the inference model. [Code](https://github.com/sgl-project/sglang/blob/v0.5.1/python/sglang/srt/model_executor/model_runner.py#L971)
 
