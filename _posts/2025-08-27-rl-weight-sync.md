@@ -258,12 +258,48 @@ for bucket in tensor_buckets:
 
 
 
-### 4.3 Merge the tensor list into one tensor to reduce cudaipc open and close
+### 4.3 Tensor Flattening: Reducing CUDA IPC Overhead: *From 30s to 7s*
 
-    1. Draw a graph
+Even with tensor bucketing, we still faced a significant bottleneck: **CUDA IPC handle management overhead**. Each tensor required its own IPC handle creation and cleanup, leading to hundreds of expensive operations.
+
+#### The Problem: Too Many CUDA IPC Operations
+
+![Too Many CUDA IPC Operations](/assets/slime/weight_sync/before_flatten.png)
+
+#### Performance Profiling Analysis
+
+The flame graph above reveals the true bottleneck in our weight synchronization process. Here's the breakdown:
+
+| **Phase** | **Duration** | **Percentage** | **Main Activities** |
+|-----------|--------------|----------------|---------------------|
+| **IPC Handler Open** | 22ms | 54% | CUDA IPC handle creation and memory mapping |
+| **Load Weights** | 8ms | 19% | Actual weight loading and tensor reconstruction |
+| **IPC Handler Close** | 11ms | 27% | CUDA IPC cleanup and resource deallocation |
+| **Total** | **41ms** | **100%** | Complete weight update cycle in SGLang |
 
 
+**Critical Finding**: **81% of the time** is spent on CUDA IPC operations (open + close), while only **19%** is used for actual weight loading. This explains why tensor flattening provides such dramatic improvements.
 
+![After Flatten](/assets/slime/weight_sync/after_flatten.png)
+
+#### Performance After Tensor Flattening
+
+| **Phase** | **Duration** | **Percentage** | **Improvement** |
+|-----------|--------------|----------------|-----------------|
+| **IPC Handler Open** | 3ms | 15% | 86% faster |
+| **Rebuild** | 5ms | 25% | New phase for tensor reconstruction |
+| **Load Weights** | 12ms | 60% | Small Variance |
+| **IPC Handler Close** | 200μs | 1% | 98% faster |
+| **Total** | **20ms** | **100%** | **51% total improvement** |
+
+**Key Achievement**: By flattening tensors, we reduced IPC operations from **81%** to **16%** of total time, while weight loading became the dominant phase at **60%** - exactly what we want!
+
+
+For technical details such as how to implement the tensor flattening, please refer to the following PRs:
+
+Related PRs: 
+- [SGLang FlattenedTensorBucket Implementation](https://github.com/sgl-project/sglang/pull/8079)
+- [SLIME Integration and Testing](https://github.com/THUDM/slime/pull/156)
 
 <div class="divider"></div>
 
