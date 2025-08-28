@@ -3,7 +3,7 @@ title: Draft - Efficient RL Training - Optimizing Weight Sync in slime
 updated: 2025-08-27 11:11
 ---
 
-### Still in draft, ETA: 2025-09-01
+### Status: Under Peer Review, ETA: 2025-09-01
 
 <div class="authors-section" style="display: flex; justify-content: center; margin: 40px 0; gap: 40px;">
   <div style="margin: 0 0 5px 0; font-size: 18px; font-weight: 500;"><p>Authored by</p></div>
