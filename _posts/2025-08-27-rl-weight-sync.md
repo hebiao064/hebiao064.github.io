@@ -102,31 +102,31 @@ In RL for LLMs (e.g., PPO, GRPO):
 
 The weight sync process involves sophisticated cross-process GPU memory sharing. Here's the detailed 5-step workflow:
 
-1. In Megatron Worker Group, gather all tensors from distributed workers, by gathering tensors which was distibuted by PP/TP/EP/ETP in training process.
-2. Serialize the Tensor into CudaIpcHandlers 
-3. Call SGLang Server’s update_weight_by_tensor API
-4. Scatter the CudaIpcHandlers into SGLang’s TP Workers
-5. Deserialize back by rebuilding CUDA Tensors and Load Weights
+1. **Gather distributed tensors**: Collect model weights from distributed workers across PP/TP/EP/ETP ranks in the Megatron training process. [Code](https://github.com/THUDM/slime/blob/e943681211e2b230f2a34efd9793e1257c2d70c7/slime/backends/megatron_utils/update_weight_utils.py#L334-L399)
+2. **Serialize to CUDA IPC**: Convert tensors into CUDA IPC handlers and aggregate them into transfer-ready buckets. [Code](https://github.com/THUDM/slime/blob/e943681211e2b230f2a34efd9793e1257c2d70c7/slime/backends/megatron_utils/update_weight_utils.py#L402-L416)
+3. **API communication**: Send serialized tensor data to SGLang server via the `update_weight_by_tensor` endpoint. [Code](https://github.com/THUDM/slime/blob/main/slime/backends/sglang_utils/sglang_engine.py#L151-L171)
+4. **Distribute to workers**: Scatter CUDA IPC handlers across SGLang's tensor parallel workers. [Code](https://github.com/sgl-project/sglang/blob/5343058875a7c07ad62cfef9681f26ffbe359859/python/sglang/srt/managers/tokenizer_manager.py#L1153-L1155)
+5. **Reconstruct and load**: Deserialize CUDA IPC handlers back to tensors and load the updated weights into the inference model. [Code](https://github.com/sgl-project/sglang/blob/v0.5.1/python/sglang/srt/model_executor/model_runner.py#L971)
 
-<div class="divider"></div>
 
+<br>
 
 ### Why Server-Based Architecture?
 We chose SGLang's server-based approach over direct engine integration for several key reasons:
 
-1. **Decoupling**: Clean separation between training and inference processes, hence we can maximize the performance of both sides.
-2. **Scalability**: Native compatible with SGLang Router, which can do Router-based load balancing across multiple inference nodes to maximize the utilization of KV Cache.
-3. **Reliability**: Easier error handling and recovery vs tight process coupling.
+1. **Decoupling**: Clean separation between training and inference processes enables independent optimization of both systems.
+2. **Scalability**: Native compatibility with SGLang Router enables load balancing across multiple inference nodes and maximizes Radix cache utilization.
+3. **Reliability**: Simplified error handling and recovery compared to tightly coupled process architectures.
 
-
+<div class="divider"></div>
 ## 4. Our optimization journey: From 60s to 7s
 
 ![Our optimization journey](/assets/slime/weight_sync/our_optimization_journey.png)
 
 
-Through this optimization journey, we've adopted many techniques that we'll discuss in detail below. And we will be using QWen3-30B-A3B model as an example for the following blog.
+Through this optimization journey, we've adopted many techniques that we'll discuss in detail below, using the QWen3-30B-A3B model as our reference example.
 
-> Note: The latency number was simulated according to the series of PRs to make it easier to understand the logic, in reality, we didn't follow the order of improvement like the graph shown above.
+> **Note**: The latency numbers shown are simulated based on our series of PRs to illustrate the optimization logic clearly. In reality, we didn't implement improvements in the exact order shown above. A reproducible benchmark setup is available [here](https://gist.github.com/hebiao064/335ac5b44237af8f9514bb37fb216035) for 8 H100 GPUs.
 
 <div class="divider"></div>
 
