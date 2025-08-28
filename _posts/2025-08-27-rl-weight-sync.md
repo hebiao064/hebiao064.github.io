@@ -111,13 +111,22 @@ The weight sync process involves sophisticated cross-process GPU memory sharing.
 <div class="divider"></div>
 
 
+### Why Server-Based Architecture?
+We chose SGLang's server-based approach over direct engine integration for several key reasons:
 
-## 4. Our optimization journey: From 120s to 7s
+1. **Decoupling**: Clean separation between training and inference processes, hence we can maximize the performance of both sides.
+2. **Scalability**: Native compatible with SGLang Router, which can do Router-based load balancing across multiple inference nodes to maximize the utilization of KV Cache.
+3. **Reliability**: Easier error handling and recovery vs tight process coupling.
+
+
+## 4. Our optimization journey: From 60s to 7s
 
 ![Our optimization journey](/assets/slime/weight_sync/our_optimization_journey.png)
 
 
 Through this optimization journey, we've adopted many techniques that we'll discuss in detail below. And we will be using QWen3-30B-A3B model as an example for the following blog.
+
+> Note: The latency number was simulated according to the series of PRs to make it easier to understand the logic, in reality, we didn't follow the order of improvement like the graph shown above.
 
 <div class="divider"></div>
 
@@ -141,7 +150,7 @@ When transferring large model weights between processes, we face a fundamental c
 2. **Minimal Memory Overhead**: Only ~64 bytes for the IPC handle vs GBs for serialized data
 3. **GPU-to-GPU Direct**: Avoids CPU-GPU memory copies entirely
 
-This forms our baseline implementation, achieving significant improvements over traditional serialization approaches, however, it still took us 120s to sync the weight.
+This forms our baseline implementation, achieving significant improvements over traditional serialization approaches, however, it still took us 60s to sync the weight.
 
 
 
@@ -149,7 +158,7 @@ This forms our baseline implementation, achieving significant improvements over 
 
 
 
-### 4.1 Optimizing the tensor gathering process: *From 120s to 90s*
+### 4.1 Optimizing the tensor gathering process: *From 60s to 50s*
 
 The first major bottleneck was in gathering tensors scattered across different distributed parallelism paradigms (Pipeline Parallel/Tensor Parallel/Expert Parallel).
 
@@ -185,9 +194,9 @@ for handle in handles:
 ```
 
 #### Performance Impact:
-- **Before**: Sequential gathering → 120s
-- **After**: Parallel async gathering → 90s  
-- **Improvement**: 25% reduction in sync time
+- **Before**: Sequential gathering → 60s
+- **After**: Parallel async gathering → 50s  
+- **Improvement**: 17% reduction in sync time
 - **Key insight**: Maximize network bandwidth utilization by parallelizing communications
 
 Code Reference: [slime/backends/megatron_utils/update_weight_utils.py](https://github.com/THUDM/slime/blob/main/slime/backends/megatron_utils/update_weight_utils.py#L59-L123)
@@ -200,7 +209,7 @@ Related PRs: [https://github.com/THUDM/slime/pull/135](https://github.com/THUDM/
 
 
 
-### 4.2 Optimizing SGLang Server Calls with Tensor Bucketing: *From 90s to 30s*
+### 4.2 Optimizing SGLang Server Calls with Tensor Bucketing: *From 50s to 30s*
 
 The next bottleneck was in the number of API calls to SGLang servers. Making individual HTTP requests for each tensor was causing significant overhead.
 
@@ -246,9 +255,9 @@ for bucket in tensor_buckets:
 ```
 
 #### Performance Impact:
-- **Before**: ~2000 individual API calls → 90s
+- **Before**: ~2000 individual API calls → 50s
 - **After**: ~120 bucketed calls → 30s
-- **Improvement**: 67% reduction by minimizing HTTP overhead
+- **Improvement**: 40% reduction by minimizing HTTP overhead
 
 [Code Reference](https://github.com/THUDM/slime/blob/b738d3338aebcdc2875519d3ddeff4991010adf5/slime/backends/megatron_utils/update_weight_utils.py#L277-L293)
 
@@ -257,8 +266,7 @@ for bucket in tensor_buckets:
 
 
 
-
-### 4.3 Tensor Flattening: Reducing CUDA IPC Overhead: *From 30s to 7s*
+### 4.3 Tensor Flattening: Reducing CUDA IPC Overhead: *From 30s to 20s*
 
 Even with tensor bucketing, we still faced a significant bottleneck: **CUDA IPC handle management overhead**. Each tensor required its own IPC handle creation and cleanup, leading to hundreds of expensive operations.
 
@@ -290,7 +298,7 @@ The flame graph above reveals the true bottleneck in our weight synchronization 
 | **Rebuild** | 5ms | 25% | New phase for tensor reconstruction |
 | **Load Weights** | 12ms | 60% | Small Variance |
 | **IPC Handler Close** | 200μs | 1% | 98% faster |
-| **Total** | **20ms** | **100%** | **51% total improvement** |
+| **Total** | **20ms** | **100%** | **33% total improvement** |
 
 **Key Achievement**: By flattening tensors, we reduced IPC operations from **81%** to **16%** of total time, while weight loading became the dominant phase at **60%** - exactly what we want!
 
@@ -305,48 +313,69 @@ Related PRs:
 
 
 
-### 4.4 Load Weight Optimization
+### 4.4 Load Weight Optimization: Final Performance Gains: *From 20s to 7s*
 
-    1. Add PRs
+After optimizing the IPC overhead, we identified additional bottlenecks in the weight loading process itself, particularly for MoE models.
 
+#### Key Optimizations:
 
+**1. Parameter Dictionary Caching**
+```python
+# Before: Expensive model traversal on every weight update
+params_dict = dict(self.named_parameters())
+
+# After: Cache the parameter dictionary
+if not hasattr(self, "_cached_params_dict"):
+    self._cached_params_dict = dict(self.named_parameters())
+params_dict = self._cached_params_dict
+```
+
+**2. Expert Map GPU Migration Optimization**  
+```python
+# Avoid repeated GPU-to-CPU synchronization for expert mapping
+if self.expert_map_cpu is not None and self.expert_map_gpu is None:
+    # Move expert map to GPU once and cache it
+    self.expert_map_gpu = self.expert_map_cpu.to(device="cuda")
+```
+
+**3. CUDA Device Caching**
+```python
+# Cache CUDA device queries to avoid repeated expensive calls
+@lru_cache(maxsize=8)
+def get_device(device_id: Optional[int] = None) -> str:
+    # Cached device lookup eliminates repeated torch.cuda.is_available() calls
+```
+
+#### Performance Impact:
+- **Before**: Various weight loading bottlenecks → 20s
+- **After**: Optimized parameter caching and device handling → 7s
+- **Improvement**: 65% reduction in final weight loading time
+
+#### Key Insights:
+- Most performance optimizations in SGLang focus on the forward pass, while weight loading optimization receives less attention. This creates abundant low-hanging fruit opportunities, as demonstrated by the PRs above.
+
+Related PRs: 
+- [Remove QWen3 MOE Load Weight overhead](https://github.com/sgl-project/sglang/pull/8751)
+- [Avoid Expert Map GPU-to-CPU Device Sync](https://github.com/sgl-project/sglang/pull/8753)
+- [Cache Cuda Device](https://github.com/sgl-project/sglang/pull/8996)
 
 
 <div class="divider"></div>
 
-## 5. Key Insights and Lessons Learned
 
-### Why Server-Based Architecture?
-We chose SGLang's server-based approach over direct engine integration for several key reasons:
-
-1. **Decoupling**: Clean separation between training and inference processes
-2. **Scalability**: Router-based load balancing across multiple inference nodes  
-3. **Reliability**: Easier error handling and recovery vs tight process coupling
-
-
-## 6. Future Optimizations
+## 5. Future Optimizations
 
 Several exciting optimization opportunities remain:
 
 - **Overlap Communication**: Pipeline gathering and sending operations
 - **Async Weight Loading**: Non-blocking model weight updates  
-- **Zero-Redundancy Layout**: Pre-calculate inference engine memory layout
-- **Cross-Node CUDA IPC**: Extend beyond single-node limitations
-
-<div class="divider"></div>
-
-## 7. Acknowledgments
-
-We extend our gratitude to:
-- The **slime Team** for the innovative cross-process weight synchronization framework
-- The **SGLang Team** for the high-performance inference engine and CUDA IPC support  
-
-Special thanks to the open-source community for making these advanced ML systems accessible to researchers worldwide.
+- **Zero-Redundancy Layout**: Pre-calculate inference engine memory layout and do zero-redundancy copy
 
 <div class="divider"></div>
 
 
-## 8. References
+
+## 6. References
 
 [^1]: [LlamaRL Paper](https://arxiv.org/pdf/2505.24034)
 [^2]: [Torch Memory Saver: A PyTorch library that allows tensor memory to be temporarily released and resumed later](https://github.com/fzyzcjy/torch_memory_saver)
