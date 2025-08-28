@@ -60,18 +60,22 @@ slime is a LLM post-training framework aiming for RL Scaling, it was designed to
 - **Versatile** – with a fully customizable rollout interface and flexible training setups (colocated or decoupled, synchronous or asynchronous, RL or SFT cold start).
 - **Performant** - integrating SGLang for inference and Megatron-LM for training, natively.
 - **Maintainable** - with a lightweight codebase and smooth transition from Megatron pretraining to SGLang deployment.
-<div class="divider"></div>
 
+<br>
 ![What is slime?](/assets/slime/weight_sync/slime_overview.png)
-
-Here is the overview of the slime RL infrastructure. The system consists of three core modules:
+<br>
+The system consists of three core modules:
 **Training (Megatron)** – handles the main training process, reads data from the Data Buffer, and
 synchronizes parameters with the rollout module after training; **Rollout (SGLang + Router)** –
 generates new data, including rewards and verifier outputs, and writes it to the Data Buffer; **Data
 Buffer** – serves as a bridge module that manages prompt initialization, custom data, and rollout
 generation strategies.
+
+<br>
+
 <div class="divider"></div>
 
+<br>
 
 ## 2. What is Weight Sync?
 
@@ -79,7 +83,22 @@ generation strategies.
 <br>
 
 **Weight sync** in LLM reinforcement learning (RL) refers to the process of **copying updated model weights from the training side to the inference side** so that inference workers (used for generating samples, evaluations, or environment rollouts) always use up-to-date parameters. 
+
+
+### Why do we need it?
+
+In RL for LLMs (e.g., PPO, GRPO):
+
+1. **Training engine** (on GPUs or distributed nodes) updates weights every optimization step.
+2. **Inference engine** (another process or cluster) generates rollouts, samples actions, or evaluates policies, but it must use the **latest policy weights** to stay consistent with training.
+3. These two components often run separately (different processes, nodes, or even different frameworks like Megatron/FSDP vs. SGLang/vLLM), so **explicit synchronization is required**.
+
+<br>
+
 <div class="divider"></div>
+
+<br>
+
 
 
 ## 3. How weight sync works in slime?
@@ -95,17 +114,25 @@ The weight sync can be outlined in 5 steps:
 4. Scatter the CudaIpcHandlers into SGLang’s TP Workers
 5. Deserialize back by rebuilding CUDA Tensors and Load Weights
 
+<br>
+
 <div class="divider"></div>
 
+<br>
 
-## 4. Our optimization journey
+
+## 4. Our optimization journey from 120s to 7s
 
 ![Our optimization journey](/assets/slime/weight_sync/our_optimization_journey.png)
 
 
 Through the journey we’ve adopted many optimizion and here we will discuss them in detail.
+
+<br>
+
 <div class="divider"></div>
 
+<br>
 ### 4.0 Cross Process Data Transfer on GPU
 
 
@@ -115,7 +142,12 @@ Through the journey we’ve adopted many optimizion and here we will discuss the
     2. Considering the model weight could be huge (e.g: 60GB for a QWen3-30B-A3B model), serialize it into base64 is not a good idea
     3. Glad that we can serailize the cuda tensor to cudaipc and we can rebuild the tensor on  within the same tensor in the consumer process, by doing that we can make it much simpler. 
     4. Since this is the very first version, so we let’s call it baseline.
+
+
+
 <div class="divider"></div>
+
+
 
 ### 4.1 Optimizing the tensor gathering process: *From 120s to 90s*
 
@@ -123,7 +155,9 @@ Through the journey we’ve adopted many optimizion and here we will discuss the
     2. Instead of gather them one by one, we choose to run `dist.all_gather(param_list, param, async_op=True)` to maximize the bandwidth, here is the code pointer: https://github.com/THUDM/slime/blob/main/slime/backends/megatron_utils/update_weight_utils.py#L59-L123
 
 
+
 <div class="divider"></div>
+
 
 
 ### 4.2 Optimizing the SGLang Server Calls by cumulate the tensors into buckets: *From 90s to 30s*
@@ -132,18 +166,21 @@ Through the journey we’ve adopted many optimizion and here we will discuss the
     1. Use bucket size 512mb and send list to avoid CPU Overhead
     2. And introduce the diff between MOE and Dens
 
-<div class="divider"></div>
-
-
 
 <div class="divider"></div>
+
+
+
 
 ### 4.3 Merge the tensor list into one tensor to reduce cudaipc open and close
 
     1. Draw a graph
 
 
+
+
 <div class="divider"></div>
+
 
 
 ### 4.4 Load Weight Optimization
