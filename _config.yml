@@ -22,7 +22,7 @@ sass:
 
 # Other Params
 include:            [ "robots.txt" ]
-exclude:            [ "LICENSE", "README.md", "CNAME", "vendor", "Gemfile", "script" ]
+exclude:            [ "LICENSE", "README.md", "CNAME", "vendor", "Gemfile", "script", "venv" ]
 plugins:
   - jekyll-sitemap
   - jekyll-remote-theme

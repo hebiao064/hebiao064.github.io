@@ -8,14 +8,14 @@
 ### On GitHub Pages
 
 ```bash
-# Install the specific bundler version
-gem install bundler -v 2.0.2
+# Set up Ruby path (add this to your ~/.zshrc for permanent use)
+export PATH="/opt/homebrew/opt/ruby/bin:$PATH"
 
 # Install dependencies
-bundle _2.0.2_ install
+bundle install
 
 # Run Jekyll to start the server locally
-bundle _2.0.2_ exec jekyll serve
+bundle exec jekyll serve
 ```
 
 ### Push to GitHub Pages
