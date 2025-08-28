@@ -224,35 +224,41 @@ for name, tensor in named_tensors.items():
 ```
 
 #### The Solution: Tensor Bucketing
+
+The key insight is to intelligently group parameters into optimally-sized buckets before transmission. Here's our production implementation [Code](https://github.com/THUDM/slime/blob/e943681211e2b230f2a34efd9793e1257c2d70c7/slime/backends/megatron_utils/update_weight_utils.py#L277-L332):
+
 ```python
-# Efficient: Batch tensors into 512MB buckets
-def create_tensor_buckets(named_tensors, bucket_size=512 * 1024 * 1024):
-    buckets = []
-    current_bucket = {}
-    current_size = 0
+def get_param_info_buckets(args, model) -> list[list[ParamInfo]]:
+    param_infos = get_param_infos(args, model)
+    param_info_buckets = [[]]
+    buffer_size = 0
     
-    for name, tensor in named_tensors.items():
-        tensor_size = tensor.numel() * tensor.element_size()
-        if current_size + tensor_size > bucket_size:
-            buckets.append(current_bucket)
-            current_bucket = {}
-            current_size = 0
-        
-        current_bucket[name] = tensor
-        current_size += tensor_size
+    for info in param_infos:
+        # Handle different parallelism strategies
+        if ".experts." in info.name:
+            tp_size = mpu.get_expert_tensor_parallel_world_size()
+        else:
+            tp_size = mpu.get_tensor_model_parallel_world_size()
+        param_size = info.size * tp_size
+
+        # Create new bucket when size limit exceeded
+        if buffer_size + param_size > args.update_weight_buffer_size:
+            param_info_buckets.append([])
+            buffer_size = 0
+            
+        param_info_buckets[-1].append(info)
+        buffer_size += param_size
     
-    if current_bucket:
-        buckets.append(current_bucket)
-    return buckets
+    return param_info_buckets
+
+self.param_info_buckets = get_param_info_buckets(args, model)
 
 # Send buckets instead of individual tensors
-for bucket in tensor_buckets:
-    serialized_bucket = MultiprocessingSerializer.serialize(bucket)
-    response = requests.post(
-        f"http://{server_host}/update_weights_from_tensor",
-        json={"serialized_named_tensors": [serialized_bucket]}
-    )
+for param_infos in tqdm(self.param_info_buckets, disable=rank != 0, desc="Update weights"):
+    self._update_bucket_weights_from_tensor(param_infos)
 ```
+
+> **Note**: From serveral experiments, we found that 512MB is the optimal bucket size for the balance of memory and latency.
 
 #### Performance Impact:
 - **Before**: ~2000 individual API calls → 50s
