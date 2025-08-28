@@ -40,7 +40,7 @@ updated: 2025-08-27 11:11
   <div class="author-card" style="display: flex; flex-direction: column; align-items: center; max-width: 200px; text-align: center;">
     <h3 style="margin: 0 0 5px 0; font-size: 18px; font-weight: 500;">Ji Li</h3>
     <div class="author-social" style="display: flex; gap: 12px; margin-top: 5px;">
-      <a href="https://www.linkedin.com/in/gelee-q/" target="_blank" style="text-decoration: none; border: none;">
+      <a href="https://www.linkedin.com/in/ji-li-a4892623b/" target="_blank" style="text-decoration: none; border: none;">
         <img src="https://cdn.jsdelivr.net/npm/simple-icons@v8/icons/linkedin.svg" alt="LinkedIn" style="width: 18px; height: 18px; filter: invert(30%);">
       </a>
       <a href="https://github.com/GeLee-Q" target="_blank" style="text-decoration: none; border: none;">
@@ -302,7 +302,7 @@ Several exciting optimization opportunities remain:
 ## 7. Acknowledgments
 
 We extend our gratitude to:
-- The **SLIME Team** for the innovative cross-process weight synchronization framework
+- The **slime Team** for the innovative cross-process weight synchronization framework
 - The **SGLang Team** for the high-performance inference engine and CUDA IPC support  
 
 Special thanks to the open-source community for making these advanced ML systems accessible to researchers worldwide.
