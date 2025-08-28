@@ -382,8 +382,16 @@ Several exciting optimization opportunities remain:
 
 <div class="divider"></div>
 
+## 6. Acknowledgments
 
-## 6. References
+We extend our gratitude to:
+- The **slime Team** for the light and power RL training framework
+- The **SGLang Team** for the high-performance inference engine and foundation work of weights sync.
+
+
+<div class="divider"></div>
+
+## 7. References
 
 [^1]: [slime: An SGLang-Native Post-Training Framework for RL Scaling](https://lmsys.org/blog/2025-07-09-slime/)
 [^2]: [GLM-4.5: Agentic, Reasoning, and Coding (ARC) Foundation Models](https://arxiv.org/pdf/2508.06471)
