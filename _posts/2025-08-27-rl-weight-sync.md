@@ -307,7 +307,7 @@ The flame graph above reveals the true bottleneck in our weight synchronization 
 | **Rebuild** | 5ms | 25% | New phase for tensor reconstruction |
 | **Load Weights** | 12ms | 60% | Small Variance |
 | **IPC Handler Close** | 200μs | 1% | 98% faster |
-| **Total** | **20ms** | **100%** | **33% total improvement** |
+| **Total** | **20ms** | **100%** | **51% improvement vs 41ms without flattening** |
 
 **Key Achievement**: By flattening tensors, we reduced IPC operations from **81%** to **16%** of total time, while weight loading became the dominant phase at **60%** - exactly what we want!
 
