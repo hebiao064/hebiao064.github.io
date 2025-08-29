@@ -115,11 +115,15 @@ The weight sync process involves sophisticated cross-process GPU memory sharing.
 <br>
 
 ### Why Server-Based Architecture?
-We chose SGLang's server-based approach over direct engine integration for several key reasons:
 
-1. **Decoupling**: Clean separation between training and inference processes, hence we can maximize the performance of both sides.
-2. **Scalability**: Native compatible with SGLang Router, which can do Router-based load balancing across multiple inference nodes to maximize the utilization of KV Cache.
-3. **Reliability**: Easier error handling and recovery vs tight process coupling.
+1.  **Ensuring Consistency Between Training and Inference.** Since online tasks will undoubtedly use a server-based setup, using the exact same configuration for RL training can:
+    * Prevent discrepancies between the model's performance during training and its metrics when deployed or evaluated in a standalone test.
+    * Allow full reuse of the tests and performance optimizations already made for the server with SGLang.
+
+2.  **Reducing the Mental Burden of Custom Rollouts.**
+    * By using server-based engines with a router, writing rollouts becomes similar to calling a regular online service. This makes it easier for users to define custom rollout functions.
+    * The router's address can be exposed externally, allowing outside agent environments to freely call the internal SGLang server. This enables a purely asynchronous training approach.
+
 
 <div class="divider"></div>
 
