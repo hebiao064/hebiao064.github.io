@@ -82,6 +82,7 @@ generation strategies.
 **Weight sync** in LLM reinforcement learning (RL) refers to the process of **copying updated model weights from the training side to the inference side** so that inference workers always use up-to-date parameters. 
 
 
+
 ### Why do we need it?
 
 In RL for LLMs (e.g., PPO, GRPO):
@@ -90,6 +91,7 @@ In RL for LLMs (e.g., PPO, GRPO):
 2. **Inference engine** generates rollouts, samples actions, but it needs to use the **latest policy weights** to stay consistent with training.
 3. These two components often run separately (different processes and different frameworks like Megatron/FSDP vs. SGLang/vLLM), so **explicit synchronization is required**.
 
+> **Note**: This blog focuses exclusively on Colocated Mode, where we utilize the `update_weights_from_tensor` endpoint throughout our optimization journey. In disaggregated mode, slime uses the `update_weights_from_distributed` endpoint, which transfers weights through NVLink/InfiniBand interconnects.
 
 <div class="divider"></div>
 
@@ -109,7 +111,7 @@ Here's the detailed 5-step workflow:
 4. **Distribute to workers**: Scatter CUDA IPC handlers across SGLang's tensor parallel workers. [Code](https://github.com/sgl-project/sglang/blob/5343058875a7c07ad62cfef9681f26ffbe359859/python/sglang/srt/managers/tokenizer_manager.py#L1153-L1155)
 5. **Reconstruct and load**: Deserialize CUDA IPC handlers back to tensors and load the updated weights into the inference model. [Code](https://github.com/sgl-project/sglang/blob/v0.5.1/python/sglang/srt/model_executor/model_runner.py#L971)
 
-> **Note**: This blog focuses exclusively on Colocated Mode, where we utilize the `update_weights_from_tensor` endpoint throughout our optimization journey. In disaggregated mode, slime uses the `update_weights_from_distributed` endpoint, which transfers weights through NVLink/InfiniBand interconnects.
+
 
 <br>
 
