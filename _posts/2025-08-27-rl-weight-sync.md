@@ -170,7 +170,17 @@ This forms our baseline implementation, achieving significant improvements over 
 
 The first major bottleneck was in gathering tensors scattered across different distributed parallelism paradigms (Pipeline Parallel/Tensor Parallel/Expert Parallel).
 
-#### The Solution: Async Tensor Gathering
+#### Communication Strategy by Parallelism Type
+
+| **Parallelism** | **Communication** | **Reason** |
+|-----------------|-------------------|------------|
+| **Tensor Parallel (TP)** | `all_gather` | Each rank has partial tensor → collect all parts to reconstruct complete tensor |
+| **Pipeline Parallel (PP)** | `broadcast` | Source rank has complete layer → distribute to other pipeline stages |
+| **Expert Parallel (EP)** | `broadcast` | Source rank has complete expert → distribute to other expert groups |
+
+#### The Solution: Async Tensor Gathering/Broadcast
+
+In below code snippet, we use `all_gather` for TP Tensors as example.
 ```python
 def async_tensor_gathering():
     # Phase 1: Start all async operations simultaneously
