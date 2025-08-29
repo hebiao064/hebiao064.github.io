@@ -170,35 +170,29 @@ This forms our baseline implementation, achieving significant improvements over 
 
 The first major bottleneck was in gathering tensors scattered across different distributed parallelism paradigms (Pipeline Parallel/Tensor Parallel/Expert Parallel).
 
-#### The Problem
-Initially, we were gathering tensors sequentially:
+#### The Solution: Async Tensor Gathering
 ```python
-# Slow sequential approach
-for param_info in param_infos:
-    if distributed.get_rank() == param_info.src_rank:
-        param = weights["actor"][param_info.name]
-        dist.broadcast(param, src=param_info.src_rank, group=pp_group)
-```
-
-This creates a serialization bottleneck where each parameter waits for the previous one to complete.
-
-#### The Solution: Asynchronous Gathering
-```python
-# Fast async approach
-handles = []
-for param_info, param in zip(param_infos, params):
-    if param_info.src_rank in dist.get_process_group_ranks(mpu.get_pipeline_model_parallel_group()):
-        handle = torch.distributed.broadcast(
-            param, 
-            src=param_info.src_rank, 
-            group=mpu.get_pipeline_model_parallel_group(), 
-            async_op=True  # Key optimization!
+def async_tensor_gathering():
+    # Phase 1: Start all async operations simultaneously
+    handles = []
+    for param in tensor_parallel_params:
+        handle = dist.all_gather(
+            param_partitions, param.data, 
+            group=tp_group, async_op=True  # Key: non-blocking
         )
         handles.append(handle)
+    
+    # Phase 2: Wait for ALL operations to complete
+    for handle in handles:
+        handle.wait()  # Maximize parallelism by batching waits
+    
+    # Phase 3: Process all results after all communications are done
+    gathered_params = []
+    for info, direct_param, handle, param_partitions, partition_dim in gather_tasks:
+        param = torch.cat(param_partitions, dim=partition_dim)
+        gathered_params.append(param)
 
-# Wait for all operations to complete
-for handle in handles:
-    handle.wait()
+    return gathered_params
 ```
 
 #### Performance Impact:
