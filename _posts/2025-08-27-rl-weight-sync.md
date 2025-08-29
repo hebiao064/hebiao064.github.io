@@ -99,8 +99,9 @@ In RL for LLMs (e.g., PPO, GRPO):
 
 ![How weight sync works in slime?](/assets/slime/weight_sync/how_weight_sync_works.png)
 
+In our architecture, the **Megatron** worker and the **SGLang** worker are colocated on the same physical GPUs. To achieve zero-copy tensor sharing, Megatron doesn't send the data itself. Instead, it performs an param gathering to create a list of CUDA IPC handles. These handles are lightweight pointers to the tensors' locations in GPU memory. SGLang then uses these handles to directly map and access the tensor data from its own process, completely eliminating memory copy overhead
 
-The weight sync process involves sophisticated cross-process GPU memory sharing. Here's the detailed 5-step workflow:
+Here's the detailed 5-step workflow:
 
 1. **Gather distributed tensors**: Collect model weights from distributed workers across PP/TP/EP/ETP ranks in the Megatron training process. [Code](https://github.com/THUDM/slime/blob/e943681211e2b230f2a34efd9793e1257c2d70c7/slime/backends/megatron_utils/update_weight_utils.py#L334-L399)
 2. **Serialize to CUDA IPC**: Convert tensors into CUDA IPC handlers and aggregate them into transfer-ready buckets. [Code](https://github.com/THUDM/slime/blob/e943681211e2b230f2a34efd9793e1257c2d70c7/slime/backends/megatron_utils/update_weight_utils.py#L402-L416)
