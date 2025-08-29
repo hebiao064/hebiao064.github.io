@@ -110,6 +110,7 @@ The weight sync process involves sophisticated cross-process GPU memory sharing.
 4. **Distribute to workers**: Scatter CUDA IPC handlers across SGLang's tensor parallel workers. [Code](https://github.com/sgl-project/sglang/blob/5343058875a7c07ad62cfef9681f26ffbe359859/python/sglang/srt/managers/tokenizer_manager.py#L1153-L1155)
 5. **Reconstruct and load**: Deserialize CUDA IPC handlers back to tensors and load the updated weights into the inference model. [Code](https://github.com/sgl-project/sglang/blob/v0.5.1/python/sglang/srt/model_executor/model_runner.py#L971)
 
+> **Note**: This blog focuses exclusively on Colocated Mode, where we utilize the `update_weights_from_tensor` endpoint throughout our optimization journey. In disaggregated mode, slime uses the `update_weights_from_distributed` endpoint, which transfers weights through NVLink/InfiniBand interconnects.
 
 <br>
 
