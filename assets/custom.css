@@ -1,3 +1,9 @@
+/* Fix for nested list font size - match main content */
+ul li ul li, ol li ul li, ul li ol li, ol li ol li {
+  font-size: 14px !important;
+  line-height: 1.9em !important;
+}
+
 /* Custom Table Styling */
 .table-responsive {
   overflow-x: auto;
