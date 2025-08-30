@@ -520,3 +520,47 @@ section {
     -webkit-transform: none;
   }
 }
+
+/* Language Navigation Styling */
+.language-nav {
+  text-align: center;
+  margin: 20px 0 30px 0;
+  font-family: Consolas, monaco, monospace;
+  font-size: 14px;
+  
+  .nav-link {
+    text-decoration: none;
+    color: #666;
+    padding: 5px 10px;
+    transition: color 0.2s ease;
+    border-bottom: none;
+    
+    &:hover {
+      color: #333;
+      border-bottom: none;
+    }
+    
+    &.active {
+      color: #333;
+      font-weight: bold;
+    }
+  }
+  
+  .nav-separator {
+    color: #ccc;
+    margin: 0 8px;
+  }
+  
+  @media (max-width: 480px) {
+    margin: 15px 0 25px 0;
+    font-size: 13px;
+    
+    .nav-link {
+      padding: 4px 8px;
+    }
+    
+    .nav-separator {
+      margin: 0 6px;
+    }
+  }
+}

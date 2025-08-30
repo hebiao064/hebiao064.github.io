@@ -14,3 +14,15 @@
 	<span class="logo-prompt code">{{ prompt }}</span>
 
 </aside>
+
+<nav class="language-nav">
+	{% if page.url == '/chinese/' %}
+		<a href="/" class="nav-link">English</a>
+		<span class="nav-separator">|</span>
+		<span class="nav-link active">中文版</span>
+	{% else %}
+		<span class="nav-link active">English</span>
+		<span class="nav-separator">|</span>
+		<a href="/chinese/" class="nav-link">中文版</a>
+	{% endif %}
+</nav>
