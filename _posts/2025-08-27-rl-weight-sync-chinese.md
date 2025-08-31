@@ -54,11 +54,13 @@ lang: zh
 
 ## 1. 什么是slime？
 
-[slime](https://github.com/THUDM/slime) 是一个强化学习大规模训练框架，提供两个核心能力：
+[slime](https://github.com/THUDM/slime) 是一个强化学习大规模训练框架，提供以下核心能力：
 
-- **多功能** – 拥有完全可定制的rollout接口和灵活的训练设置（同卡或分离、同步或异步、强化学习或SFT冷启动）。
-- **高性能** - 原生集成SGLang进行推理和Megatron-LM进行训练。
-- **易维护** - 具有轻量级代码库，并可从Megatron预训练平滑过渡到SGLang部署。[^1]
+- **多功能** – 拥有完全可定制的rollout接口和灵活的训练设置（同卡或分离、同步或异步、RL或SFT）。
+- **高性能** - 原生集成Megatron和SGLang进行训练和推理。
+- **易维护** - 轻量级代码库，并可从Megatron预训练平滑过渡到SGLang部署。[^1]
+- **大规模验证** - 最近发布的[zai-org/GLM-4.5(355B)](https://github.com/zai-org/GLM-4.5) 和 [zai-org/GLM-4.5-Air(106B)](https://huggingface.co/zai-org/GLM-4.5-Air) 都是通过slime做的RL训练。
+
 
 <br>
 ![什么是slime？](/assets/slime/weight_sync/slime_overview.png)
@@ -77,13 +79,13 @@ slime主要由三个核心模块组成[^2]：
 ![什么是权重同步？](/assets/slime/weight_sync/what_is_weight_sync.png)
 <br>
 
-在LLM强化学习中，**权重同步**是指**将更新好的训练端的模型权重传输给到推理端**的过程，以确保推理工作节点始终使用最新的参数(On-Policy)。
+在LLM强化学习中，**权重同步**是指**将更新好的训练端的模型权重传输给到推理端**的过程，以确保推理工作节点始终使用最新的模型参数。
 
 
 
 ### 为什么需要权重同步？
 
-在LLM的强化学习（如PPO、GRPO）中：
+在LLM的强化学习（如PPO、GRPO等）中：
 
 1. **训练引擎**在每个`optimizer.step()`后更新策略模型权重。
 2. **推理引擎**生成rollout、采样动作，但它需要使用**最新的策略模型权重**以与训练保持一致。
@@ -133,7 +135,7 @@ slime主要由三个核心模块组成[^2]：
 
 
 
-> **注意**：延迟数字是根据这个Github Issue[^3]里的所有PR做完之后往回捋出来的，以便更容易理解逻辑，实际上，我们没有按照上图所示的改进顺序进行，因为实际工作场景中自然是按照从易到难实现，而不是根据物理上传输过程中的顺序。
+> **注意**：上图是根据这个Github Issue[^3]里的所有PR做完之后往回捋出来的，以便更容易理解逻辑，实际上，我们没有按照上图所示的改进顺序进行，因为实际工作场景中自然是按照从易到难实现，而不是根据物理传输过程中的顺序。
 
 <div class="divider"></div>
 
@@ -153,10 +155,10 @@ slime主要由三个核心模块组成[^2]：
 
 #### 主要优势：
 
-1. **零拷贝传输** 避免在进程间传送大量的数据，而是通过内存映射
+1. **零拷贝传输** 通过内存映射来传输数据，避免在进程间传送大量的数据
 2. **最小CPU内存开销**：CUDA IPC Handler非常小 vs 序列化数据的GB级别
 
-这其实只是我们的Baseline实现，虽然比直接传数据要快得多，但仍然花了60秒，显然有很多优化空间。
+这其实只是我们的baseline实现，虽然比直接传数据要快得多，但仍然花了60秒，显然有很多优化空间。
 
 
 
@@ -166,7 +168,7 @@ slime主要由三个核心模块组成[^2]：
 
 ### 4.1 优化Megatron Worker中Tensor聚合过程：*从60秒到50秒*
 
-第一个瓶颈来自于聚合分散在不同Megatron Worker中的Tensor，在此之前先浅浅介绍一下不同的并行策略(TP/PP/EP)下的聚合通信方式。
+第一个瓶颈来自于聚合分散在不同Megatron Worker中的Tensor，在此之前先浅浅介绍一下不同的并行策略(TP/PP/EP)下的聚合通信方式。这里简单介绍一下，对于后续的优化会有帮助。
 
 #### 按并行类型划分的通信策略
 
@@ -177,7 +179,7 @@ slime主要由三个核心模块组成[^2]：
 | **专家并行 (EP)** | `broadcast` | 源rank有完整专家 → 分发到其他专家组 |
 
 
-我们采取优化很简单，就是采用异步收集Tensor来打满带宽，在下面的例子中，我们以TP Tensor的`all_gather`为例。
+我们采取的优化很简单，就是采用异步收集Tensor来打满带宽，在下面的例子中，我们以TP Tensor的`all_gather`为例。
 
 #### 解决方案：异步TENSOR收集/广播
 
@@ -264,11 +266,11 @@ for param_infos in tqdm(self.param_info_buckets, disable=rank != 0, desc="Update
     self._update_bucket_weights_from_tensor(param_infos)
 ```
 
-> **注意**：通过多次实验，我们发现512MB是在内存和延迟之间平衡的最佳桶大小。
+> **注意**：通过多次实验，我们发现512MB是在内存和延迟之间平衡的最佳bucket大小。当然这个参数可以直接在slime的参数中调整，我们试过1GB，2GB的速度也不错，用户可以自己稍微尝试一下。
 
 #### 性能影响：
-- **之前**：约2000个单独API调用 → 50秒
-- **之后**：约120个分桶调用 → 30秒
+- **之前**：上万个单独API调用 → 50秒
+- **之后**：几百个API调用 → 30秒
 - **改进**：通过最小化HTTP开销减少40%
 
 [代码参考](https://github.com/THUDM/slime/blob/b738d3338aebcdc2875519d3ddeff4991010adf5/slime/backends/megatron_utils/update_weight_utils.py#L277-L293)
@@ -280,7 +282,7 @@ for param_infos in tqdm(self.param_info_buckets, disable=rank != 0, desc="Update
 
 ### 4.3 合并多个Tensor成一个Tensor：减少CUDA IPC开销：*从30秒到20秒*
 
-即使有了Tensor分桶，我们仍然面临一个重要瓶颈：**CUDA IPC Handler Open/Close开销**。每个Tensor都需要自己的IPC Handler创建和清理，导致上万个频繁的操作。
+即使有了Tensor分桶，我们仍然面临一个重要瓶颈：**CUDA IPC Handler Open/Close开销**。每个Tensor都需要自己的IPC Handler创建和清理，导致上万个频繁的操作。目前这个过程过于频繁，已经成为整个同步过程中的瓶颈。
 
 #### 问题：太多CUDA IPC操作
 
