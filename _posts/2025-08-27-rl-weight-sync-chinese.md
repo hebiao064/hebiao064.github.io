@@ -103,7 +103,7 @@ slime主要由三个核心模块组成[^2]：
 
 以下是详细的5步工作流程：
 
-1. **收集分布式张量**：从Megatron训练进程中的PP/TP/EP/ETP等级的分布式工作节点收集，并gather成完整的Tensor。[代码](https://github.com/THUDM/slime/blob/e943681211e2b230f2a34efd9793e1257c2d70c7/slime/backends/megatron_utils/update_weight_utils.py#L334-L399)
+1. **收集分布式Tensor**：从Megatron训练进程中的PP/TP/EP/ETP等级的分布式工作节点收集，并gather成完整的Tensor。[代码](https://github.com/THUDM/slime/blob/e943681211e2b230f2a34efd9793e1257c2d70c7/slime/backends/megatron_utils/update_weight_utils.py#L334-L399)
 2. **序列化为CUDA IPC**：将Tensor转换为CudaIpcHandlers并将其聚合成一个个大约为512MB的bucket tensor中。[代码](https://github.com/THUDM/slime/blob/e943681211e2b230f2a34efd9793e1257c2d70c7/slime/backends/megatron_utils/update_weight_utils.py#L402-L416)
 3. **API通信**：通过`update_weights_from_tensor` api将序列化好的CudaIpcHandlers发送到SGLang Server。[代码](https://github.com/THUDM/slime/blob/main/slime/backends/sglang_utils/sglang_engine.py#L151-L171)
 4. **分发到工作节点**：SGLang Server将CudaIpcHandlers分发到SGLang在各个GPU Rank上启动好的TP Worker进程。[代码](https://github.com/sgl-project/sglang/blob/5343058875a7c07ad62cfef9681f26ffbe359859/python/sglang/srt/managers/tokenizer_manager.py#L1153-L1155)
@@ -153,9 +153,8 @@ slime主要由三个核心模块组成[^2]：
 
 #### 主要优势：
 
-1. **零拷贝传输** 没有实际上在进程间传送大量的数据，而是通过内存映射
-2. **最小内存开销**：CUDA IPC Handler非常小 vs 序列化数据的GB级别
-3. **GPU到GPU直接传输**：避免CPU-GPU内存拷贝
+1. **零拷贝传输** 避免在进程间传送大量的数据，而是通过内存映射
+2. **最小CPU内存开销**：CUDA IPC Handler非常小 vs 序列化数据的GB级别
 
 这其实只是我们的Baseline实现，虽然比直接传数据要快得多，但仍然花了60秒，显然有很多优化空间。
 
@@ -165,21 +164,23 @@ slime主要由三个核心模块组成[^2]：
 
 
 
-### 4.1 优化张量收集过程：*从60秒到50秒*
+### 4.1 优化Megatron Worker中Tensor聚合过程：*从60秒到50秒*
 
-第一个主要瓶颈是收集分散在不同分布式并行范式（管道并行/张量并行/专家并行）中的张量。
+第一个瓶颈来自于聚合分散在不同Megatron Worker中的Tensor，在此之前先浅浅介绍一下不同的并行策略(TP/PP/EP)下的聚合通信方式。
 
 #### 按并行类型划分的通信策略
 
 | **并行方式** | **通信方式** | **原因** |
 |-----------------|-------------------|------------|
-| **张量并行 (TP)** | `all_gather` | 每个rank有部分张量 → 收集所有部分以重构完整张量 |
-| **管道并行 (PP)** | `broadcast` | 源rank有完整层 → 分发到其他管道阶段 |
+| **张量并行 (TP)** | `all_gather` | 每个rank有部分Tensor → 收集所有部分以重构完整Tensor |
+| **流水线并行 (PP)** | `broadcast` | 源rank有完整层 → 分发到其他PP Rank |
 | **专家并行 (EP)** | `broadcast` | 源rank有完整专家 → 分发到其他专家组 |
 
-#### 解决方案：异步张量收集/广播
 
-在下面的代码片段中，我们以TP张量的`all_gather`为例。
+我们采取优化很简单，就是采用异步收集Tensor来打满带宽，在下面的例子中，我们以TP Tensor的`all_gather`为例。
+
+#### 解决方案：异步TENSOR收集/广播
+
 ```python
 def async_tensor_gathering():
     # 阶段1：同时启动所有异步操作
@@ -206,9 +207,7 @@ def async_tensor_gathering():
 
 #### 性能影响：
 - **之前**：顺序收集 → 60秒
-- **之后**：并行异步收集 → 50秒  
-- **改进**：同步时间减少17%
-- **关键洞察**：通过并行化通信最大化网络带宽利用率
+- **之后**：并行异步Tensor收集 → 50秒
 
 代码参考：[slime/backends/megatron_utils/update_weight_utils.py](https://github.com/THUDM/slime/blob/main/slime/backends/megatron_utils/update_weight_utils.py#L59-L123)
 
@@ -220,13 +219,14 @@ def async_tensor_gathering():
 
 
 
-### 4.2 通过张量分桶优化SGLang服务器调用：*从50秒到30秒*
+### 4.2 通过Tensor分桶优化SGLang服务器调用：*从50秒到30秒*
 
-下一个瓶颈是对SGLang服务器的API调用数量。对每个张量进行单独的HTTP请求造成了显著的开销。
+下一个瓶颈是对SGLang服务器的API调用数量。在基础实现里，我们对每个Tensor进行单独的HTTP请求造成了显著的开销。
+这在Dense Model里问题不是很大，因为相对来说Tensor的数量较少，而MOE Model经常会有上万个Tensor需要传播，因此这个问题比较严重。
 
 #### 问题：太多小的API调用
 ```python
-# 低效：每个张量一个API调用
+# 低效：每个Tensor一个API调用
 for name, tensor in named_tensors.items():
     response = requests.post(
         f"http://{server_host}/update_weights_from_tensor",
@@ -234,9 +234,9 @@ for name, tensor in named_tensors.items():
     )
 ```
 
-#### 解决方案：张量分桶
+#### 解决方案：Tensor分桶
 
-关键洞察是在传输前将参数智能地分组为最优大小的桶。以下是我们的生产实现：
+优化方案是在传输前将参数智能地分组为最优大小的bucket。以下是slime的样例代码：
 
 ```python
 def get_param_info_buckets(args, model) -> list[list[ParamInfo]]:
@@ -245,11 +245,6 @@ def get_param_info_buckets(args, model) -> list[list[ParamInfo]]:
     buffer_size = 0
     
     for info in param_infos:
-        # 处理不同的并行策略
-        if ".experts." in info.name:
-            tp_size = mpu.get_expert_tensor_parallel_world_size()
-        else:
-            tp_size = mpu.get_tensor_model_parallel_world_size()
         param_size = info.size * tp_size
 
         # 当超过大小限制时创建新桶
@@ -264,7 +259,7 @@ def get_param_info_buckets(args, model) -> list[list[ParamInfo]]:
 
 self.param_info_buckets = get_param_info_buckets(args, model)
 
-# 发送桶而不是单个张量
+# 发送桶而不是单个Tensor
 for param_infos in tqdm(self.param_info_buckets, disable=rank != 0, desc="Update weights"):
     self._update_bucket_weights_from_tensor(param_infos)
 ```
@@ -283,9 +278,9 @@ for param_infos in tqdm(self.param_info_buckets, disable=rank != 0, desc="Update
 
 
 
-### 4.3 张量扁平化：减少CUDA IPC开销：*从30秒到20秒*
+### 4.3 合并多个Tensor成一个Tensor：减少CUDA IPC开销：*从30秒到20秒*
 
-即使有了张量分桶，我们仍然面临一个重要瓶颈：**CUDA IPC句柄管理开销**。每个张量都需要自己的IPC句柄创建和清理，导致数百个昂贵的操作。
+即使有了Tensor分桶，我们仍然面临一个重要瓶颈：**CUDA IPC Handler Open/Close开销**。每个Tensor都需要自己的IPC Handler创建和清理，导致上万个频繁的操作。
 
 #### 问题：太多CUDA IPC操作
 
@@ -293,34 +288,34 @@ for param_infos in tqdm(self.param_info_buckets, disable=rank != 0, desc="Update
 
 #### 性能分析
 
-上面的火焰图揭示了我们权重同步过程中的真正瓶颈。以下是详细分解：
+上面的flame chart揭示了我们权重同步过程中的真正瓶颈。以下是详细分解：
 
 | **阶段** | **持续时间** | **百分比** | **主要活动** |
 |-----------|--------------|----------------|---------------------|
 | **IPC句柄打开** | 22ms | 54% | CUDA IPC句柄创建和内存映射 |
-| **加载权重** | 8ms | 19% | 实际权重加载和张量重构 |
+| **加载权重** | 8ms | 19% | 实际权重加载和Tensor重构 |
 | **IPC句柄关闭** | 11ms | 27% | CUDA IPC清理和资源释放 |
 | **总计** | **41ms** | **100%** | SGLang中完整的权重更新周期 |
 
 
-**关键发现**：**81%的时间**花费在CUDA IPC操作（打开+关闭）上，而只有**19%**用于实际权重加载。这解释了为什么张量扁平化提供如此显著的改进。
+**关键发现**：**81%的时间**花费在CUDA IPC操作（打开+关闭）上，而只有**19%**用于实际权重加载。这解释了为什么合并多个Tensor可以提供如此显著的改进。
 
 ![扁平化后](/assets/slime/weight_sync/after_flatten.png)
 
-#### 张量扁平化后的性能
+#### 扁平化Tensor后的性能
 
 | **阶段** | **持续时间** | **百分比** | **改进** |
 |-----------|--------------|----------------|-----------------|
 | **IPC句柄打开** | 3ms | 15% | 快86% |
-| **重建** | 5ms | 25% | 张量重构的新阶段 |
+| **重建** | 5ms | 25% | Tensor重构的新阶段 |
 | **加载权重** | 12ms | 60% | 轻微变化 |
 | **IPC句柄关闭** | 200μs | 1% | 快98% |
-| **总计** | **20ms** | **100%** | **相比无扁平化的41ms改进51%** |
+| **总计** | **20ms** | **100%** | **相比合并前减少了51%** |
 
-**关键成就**：通过扁平化张量，我们将IPC操作从总时间的**81%**减少到**16%**，而权重加载在**60%**时成为主导阶段 - 这正是我们想要的！
+**关键成就**：通过合并多个Tensor，我们将IPC操作从总时间的**81%**减少到**16%**，而权重加载在**60%**时成为主导阶段 - 这正是我们想要的！
 
 
-有关如何实现张量扁平化等技术细节，请参考以下PR：
+有关如何实现合并多个Tensor等技术细节，请参考以下PR：
 
 相关PR： 
 - [SGLang FlattenedTensorBucket实现](https://github.com/sgl-project/sglang/pull/8079)
@@ -332,7 +327,7 @@ for param_infos in tqdm(self.param_info_buckets, disable=rank != 0, desc="Update
 
 ### 4.4 加载权重优化：最终性能提升：*从20秒到7秒*
 
-在优化IPC开销后，我们识别了权重加载过程本身的其他瓶颈，特别是对于MoE模型。
+在优化IPC开销后，我们还发现了权重加载过程本身的其他瓶颈，特别是对于MoE模型。
 
 #### 关键优化：
 
@@ -347,7 +342,7 @@ if not hasattr(self, "_cached_params_dict"):
 params_dict = self._cached_params_dict
 ```
 
-**2. 专家映射GPU迁移优化**  
+**2. 重复的Expert Map GPU Device Sync优化**  
 ```python
 # 避免专家映射的重复GPU到CPU同步
 if self.expert_map_cpu is not None and self.expert_map_gpu is None:
@@ -355,7 +350,7 @@ if self.expert_map_cpu is not None and self.expert_map_gpu is None:
     self.expert_map_gpu = self.expert_map_cpu.to(device="cuda")
 ```
 
-**3. CUDA设备缓存**
+**3. 重复的CUDA Device查询优化**
 ```python
 # 缓存CUDA设备查询以避免重复的昂贵调用
 @lru_cache(maxsize=8)
@@ -368,13 +363,11 @@ def get_device(device_id: Optional[int] = None) -> str:
 - **之后**：优化的参数缓存和设备处理 → 7秒
 - **改进**：最终权重加载时间减少65%
 
-#### 关键洞察：
-- SGLang中的大多数性能优化都专注于前向传播，而权重加载优化受到的关注较少。这创造了大量低垂果实机会，正如上述PR所展示的。
 
 相关PR： 
 - [移除QWen3 MOE加载权重开销](https://github.com/sgl-project/sglang/pull/8751)
 - [避免专家映射GPU到CPU设备同步](https://github.com/sgl-project/sglang/pull/8753)
-- [缓存Cuda设备](https://github.com/sgl-project/sglang/pull/8996)
+- [缓存Cuda Device](https://github.com/sgl-project/sglang/pull/8996)
 
 
 <div class="divider"></div>
@@ -382,19 +375,20 @@ def get_device(device_id: Optional[int] = None) -> str:
 
 ## 5. 未来优化
 
-仍有几个令人兴奋的优化机会：
+目前 slime 可以做到 7s 完成训推一体下 Qwen3 30B-A3B 模型 bf16 权重的参数同步。100s 完成 GLM4.5 355B-A32B 的 fp8 blockwise 量化 + 参数更新。
 
-- **重叠通信**：流水线收集和发送操作
-- **异步权重加载**：非阻塞模型权重更新  
-- **零冗余布局**：预计算推理引擎内存布局并进行零冗余拷贝
+但还有不少的优化空间，欢迎社区的小伙伴联系我们一起继续优化。下面是一些可能的优化方向：
+
+- **异步收集和发送**：Megatron Worker的收集和SGLang Worker的加载实际上可以异步，理论上最高能加快1倍的速度。
+- **异步权重加载**：非阻塞模型权重更新
+- **零冗余布局**：预计算推理引擎内存布局并进行零冗余拷贝，比如megatron rank 0 只传送sglang rank 0 实际需要的权重，目前还是有很大的冗余的。
 
 <div class="divider"></div>
 
 ## 6. 致谢
 
-我们感谢：
-- **slime团队**提供轻量且强大的强化学习训练框架
-- **SGLang团队**提供高性能推理引擎和权重同步的基础工作。
+- **slime团队**: https://github.com/THUDM/slime
+- **SGLang团队**: https://github.com/sgl-project/sglang
 
 
 <div class="divider"></div>
