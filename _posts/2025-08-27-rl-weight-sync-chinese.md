@@ -4,6 +4,8 @@ updated: 2025-08-27 11:11
 lang: zh
 ---
 
+> 本文也在我的知乎专栏中发布，[知乎链接](https://zhuanlan.zhihu.com/p/1945671848684658923)
+
 <div class="authors-section" style="display: flex; justify-content: center; margin: 40px 0; gap: 40px;">
   <div style="margin: 0 0 5px 0; font-size: 18px; font-weight: 500;"><p>作者</p></div>
   <!-- Author 1 -->
