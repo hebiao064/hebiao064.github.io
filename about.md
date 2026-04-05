@@ -5,11 +5,11 @@ title: About
 
 Hello,
 
-I'm **Biao He**, currently working on Coding RL Infra @ xAI, where I help build the in-house RL framework powering large-scale RL training for Grok 4.1, Grok 4.2, and our latest models.
+I'm **Biao He**, currently working on Coding RL Infra @ xAI, where I help build our in-house RL framework that powers very large-scale training for Grok 4.1, Grok 4.2, and beyond.
 
-Before xAI, I led the Training Infra team @ LinkedIn, building a fast and easy-to-use in-house training framework for LLMs and recommendation models.
+Before xAI, I led the Training Infra team @ LinkedIn, where I built a fast, easy-to-use in-house training framework for LLMs and recommendation models.
 
-I'm also an open source enthusiast, with contributions to projects including:
+I'm also an open source enthusiast, with contributions to:
 - [SGLang](https://github.com/sgl-project/sglang)
 - [slime](https://github.com/THUDM/slime)
 - [Liger-Kernel](https://github.com/linkedin/Liger-Kernel)
