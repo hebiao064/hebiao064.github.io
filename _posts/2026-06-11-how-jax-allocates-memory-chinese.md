@@ -62,5 +62,18 @@ BFC Allocator是BFC(Best-Fit with Coalescing) Allocator的缩写，他的简化�
 ## 结论
 比较Torch Memory Allocator
 
+回答一开始的两个问题，
+1. 为什么我们很少在Jax中遇到OOM
+
+   原因有两层。第一层在编译期：Jax的计算是先经过XLA静态编译再执行的，XLA在编译时有一个Buffer Assignment阶段，会把计算图里所有中间结果的内存提前规划好。也就是说一个jit过的程序，它的峰值内存在编译完成时就已经确定了——如果显存放不下，问题会在编译或首次执行时就暴露出来，而不是像Torch那样跑到第N个step才因为运行时动态分配（外加碎片化）突然炸掉。
+
+   第二层在分配器：Jax默认会在backend初始化时（差不多是第一次真正用到GPU的时候，而不是严格意义上的`import jax`）一次性向CUDA申请75%的显存（由`XLA_PYTHON_CLIENT_MEM_FRACTION`控制）作为一个大Region，之后所有的allocate/deallocate都只是BFC Allocator在这个Region内部切分与合并Chunk。所以对nvidia-smi来说，进程的显存占用从头到尾稳定在75%，不存在运行中途向驱动要内存却要不到的情况。
+
+2. 我能不能jax.cuda.empty_cache()
+
+   没有这个API，也不需要。先想清楚`torch.cuda.empty_cache()`到底干了什么：它是把Caching Allocator里"已经free但还缓存着没归还给CUDA"的block还给驱动，好让同一张卡上的其他进程或库能用上这部分显存——它并不能解决Torch进程内部的碎片化。而在Jax的默认模式下，那75%的Region是预分配的、整个进程生命周期都由BFC Allocator持有，本来就没打算还给驱动，所以"empty cache"这个动作没有对象。至于碎片化，BFC在free时会自动通过prev/next指针把相邻的空闲Chunk合并（这就是名字里的Coalescing），不需要手动干预。
+
+   如果你真的需要Jax把显存让出来（比如要和别的进程共享一张卡），正确的做法是设置`XLA_PYTHON_CLIENT_PREALLOCATE=false`或`XLA_PYTHON_CLIENT_ALLOCATOR=platform`让它按需分配——但这是拿性能换灵活性，一般只在debug时用。
+
 ## 引申
 BFCAllocator里有一句这只是简化版的dlmalloc，而torch的本质是更接近于xxmalloc（感谢xxx的insight）
