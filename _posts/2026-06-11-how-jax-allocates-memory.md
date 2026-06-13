@@ -19,6 +19,8 @@ So when I hit the JAX OOM, two more basic questions came to mind:
 To answer them I had to first understand how JAX actually allocates memory, and that's how this post came about.
 
 
+<div class="divider"></div>
+
 ## Overview
 
 Let's start with a JAX vs. PyTorch comparison table to get a rough feel for how JAX handles memory. I'm assuming you already know how PyTorch's memory allocator works; if not, [A guide to PyTorch's CUDA Caching Allocator](https://zdevito.github.io/2022/08/04/cuda-caching-allocator.html) is a great read.
@@ -36,6 +38,8 @@ Let's start with a JAX vs. PyTorch comparison table to get a rough feel for how 
 The layering is basically the same on both sides. The real difference is in the allocator: JAX's `BFCAllocator` vs Torch's `CachingAllocator` behave quite differently under the hood.
 
 JAX's `BFCAllocator` preallocates one big chunk of memory upfront, while Torch's `CachingAllocator` allocates on demand and caches freed blocks into a pool for reuse.
+
+<div class="divider"></div>
 
 ## What is the BFC Allocator
 
@@ -63,6 +67,8 @@ The simplified workflow is:
 1. Grab one big contiguous block of GPU memory upfront (75% by default, controlled by the `XLA_PYTHON_CLIENT_MEM_FRACTION` env var).
 2. On an allocation request, find a free chunk that's **the smallest one that still fits** (Best-Fit), and if it's too big, split it and hand back the right-sized piece.
 3. On a free, mark the chunk as free and use its prev/next pointers to check whether the **physically** adjacent chunks are also free — if so, merge them in place (Coalescing) to reduce fragmentation.
+
+<div class="divider"></div>
 
 ### The data structures inside the BFC Allocator
 
@@ -175,6 +181,8 @@ One more thing from the comment: "Allocated chunks are never in a Bin" — Bins 
 3. **Bin is the free-block index view.**
 
    Bins only index free Chunks, organized by size. On allocation, BFC scans from smaller to larger Bins to pick the smallest free Chunk that still fits — the heart of Best-Fit.
+
+<div class="divider"></div>
 
 ### The BFC Allocator's APIs
 
@@ -398,6 +406,8 @@ BFCAllocator::ChunkHandle BFCAllocator::TryToCoalesce(ChunkHandle h, ...) {
 ```
 
 Note that the merge decision is based on **physical adjacency** (`prev/next`), not "are they in the same Bin." Two free Chunks in different Bins with completely different sizes can still merge into one bigger Chunk (and get reinserted into a Bin) as long as they sit next to each other in address space.
+
+<div class="divider"></div>
 
 ## Conclusion
 

@@ -20,6 +20,8 @@ lang: zh
 想回答这两个问题，就得先搞明白Jax到底是怎么分配内存的——于是就有了这篇blog。
 
 
+<div class="divider"></div>
+
 ## 概览
 
 这里我们先通过一张 JAX vs. PyTorch 的对比表，来大致了解 JAX 的内存分配逻辑。我这里假设你已经熟悉 PyTorch 的 memory allocator 是如何工作的；如果还不熟悉，可以先参考这篇文章：[A guide to PyTorch's CUDA Caching Allocator](https://zdevito.github.io/2022/08/04/cuda-caching-allocator.html)。
@@ -37,6 +39,8 @@ lang: zh
 可以看到，Jax 和 Pytorch的内存管理层级结构上基本一致，主要区别在于Jax的`BFCAllocator`和Torch的`CachingAllocator`内在的分配逻辑上有很大的不同。
 
 Jax的`BFCAllocator`走的是预分配大内存的路线，而Torch的`CachingAllocator`走的是按需申请内存然后缓存进Caching Pool的路线。
+
+<div class="divider"></div>
 
 ## 什么是BFC Allocator
 
@@ -63,6 +67,8 @@ class BFCAllocator : public Allocator {
 1. 一开始向GPU一次性要一大片连续内存（默认75%，可以通过环境变量`XLA_PYTHON_CLIENT_MEM_FRACTION`控制）。
 2. 当Jax请求内存时，从空闲的Chunk里找一块**大小最接近且够用**的（Best-Fit），如果太大就切开（Split），把大小正好的那块给用户。
 3. 当Jax释放内存时，把这块Chunk标记为空闲，并通过它的prev/next指针检查**物理**上相邻的前后Chunk是否也空闲——是的话就地合并（Coalescing），从而减少碎片化。
+
+<div class="divider"></div>
 
 ### BFC Allocator的详细数据结构
 
@@ -177,6 +183,8 @@ Bin 20: >= 256MB
 3. **Bin 是空闲块索引视角**: 
 
    Bin实际上只参与Free Chunk的索引，并且按照大小组织起来，分配时，BFC会根据从小到大的顺序从Bin里挑选一个最小单足够大的Free Chunk，这就是Best Fit的核心。
+
+<div class="divider"></div>
 
 ### BFC Allocator的API
 
@@ -400,6 +408,8 @@ BFCAllocator::ChunkHandle BFCAllocator::TryToCoalesce(ChunkHandle h, ...) {
 
 注意合并判断的依据是**物理相邻**（`prev/next`），而不是"在不在同一个Bin"。两个分属不同Bin、大小完全不同的空闲Chunk，只要地址上挨着，就能合并成一个更大的Chunk重新入Bin。
 
+
+<div class="divider"></div>
 
 ## 结论
 
