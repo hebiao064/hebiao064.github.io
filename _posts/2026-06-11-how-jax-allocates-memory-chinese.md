@@ -19,6 +19,8 @@ lang: zh
 
 想回答这两个问题，就得先搞明白Jax到底是怎么分配内存的——于是就有了这篇blog。
 
+这篇文章也同步分享在知乎：[JAX 是怎么分配内存的](https://zhuanlan.zhihu.com/p/2049127192043446441)。
+
 
 <div class="divider"></div>
 
