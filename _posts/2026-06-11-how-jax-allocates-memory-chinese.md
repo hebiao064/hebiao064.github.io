@@ -6,9 +6,10 @@ lang: zh
 
 
 ## 引言
-刚结束上一份工作，在开始下一份工作之前正好有一小段空档，可以更新一下博客了！
 
-在上一份工作中我遇到一个问题：在我们的RL Job里，Jax Trainer跑着跑着OOM了，这很罕见。而我之前大部分的OOM Debug经验都来自Torch——对付Torch的OOM，基本就是两个套路：
+在之前的工作中我遇到一个问题：在我们的RL Job里，Jax Trainer跑着跑着OOM了，这很罕见。
+
+我之前大部分的OOM Debug经验都来自Torch——对付Torch的OOM，基本就是两个套路：
 1. 细致点的话，用[Torch Memory Visualizer](https://pytorch.org/blog/understanding-gpu-memory-1/) 把显存占用的来源一点点分析出来，然后针对性优化，很多时候其实是忘记释放或者申请了没有必要的大内存；
 2. 懒一点的话，在疑似Memory Leak的角落加上torch.cuda.empty_cache()。
 
