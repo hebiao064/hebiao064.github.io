@@ -11,9 +11,9 @@ lang: zh
 
 我之前大部分的OOM Debug经验都来自Torch——对付Torch的OOM，基本就是两个套路：
 1. 细致点的话，用[Torch Memory Visualizer](https://pytorch.org/blog/understanding-gpu-memory-1/) 把显存占用的来源一点点分析出来，然后针对性优化，很多时候其实是忘记释放或者申请了没有必要的大内存；
-2. 懒一点的话，在疑似Memory Leak的角落加上torch.cuda.empty_cache()。
+2. 懒一点的话，在疑似Memory Leak的角落加上`torch.cuda.empty_cache()`。
 
-所以碰到Jax OOM的时候我想到了两个更基本的问题：
+所以碰到Jax OOM这个问题的时候我想到了两个更基本的问题：
 1. 为什么我很少在Jax中遇到OOM？
 2. 我能不能使用`jax.cuda.empty_cache()`？
 
@@ -21,8 +21,6 @@ lang: zh
 
 
 ## 概览
-
-<!-- ![image](/assets/jax-memory-allocator/jax_vs_torch_thiner.png) -->
 
 这里我们先通过一张 JAX vs. PyTorch 的对比表，来大致了解 JAX 的内存分配逻辑。我这里假设你已经熟悉 PyTorch 的 memory allocator 是如何工作的；如果还不熟悉，可以先参考这篇文章：[A guide to PyTorch's CUDA Caching Allocator](https://zdevito.github.io/2022/08/04/cuda-caching-allocator.html)。
 
@@ -38,7 +36,7 @@ lang: zh
 
 可以看到，Jax 和 Pytorch的内存管理层级结构上基本一致，主要区别在于Jax的`BFCAllocator`和Torch的`CachingAllocator`内在的分配逻辑上有很大的不同。
 
-Jax的BFCAllocator走的是预分配大内存的路线，而Torch的CachingAllocator走的是按需申请内存然后缓存进Caching Pool的路线。
+Jax的`BFCAllocator`走的是预分配大内存的路线，而Torch的`CachingAllocator`走的是按需申请内存然后缓存进Caching Pool的路线。
 
 ## 什么是BFC Allocator
 
