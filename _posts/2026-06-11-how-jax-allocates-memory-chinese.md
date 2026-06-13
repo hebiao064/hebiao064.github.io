@@ -49,19 +49,17 @@ BFC是Best-Fit with Coalescing的缩写。这套代码在[XLA Github Repo](https
 它是什么、为什么这么设计，源码开头的注释其实已经把话说完了：
 
 ```cpp
-// A memory allocator that implements a 'best-fit with coalescing'
-// algorithm.  This is essentially a very simple version of Doug Lea's
-// malloc (dlmalloc).
+// 一个实现了 'best-fit with coalescing'（最佳适配 + 合并）算法的内存分配器。
+// 本质上是 Doug Lea 的 malloc（dlmalloc）的一个极简版本。
 //
-// The goal of this allocator is to support defragmentation via
-// coalescing.  One assumption we make is that the process using this
-// allocator owns pretty much all of the memory, and that nearly
-// all requests to allocate memory go through this interface.
+// 这个分配器的目标是通过合并（coalescing）来支持碎片整理。
+// 我们的一个前提假设是：使用它的进程几乎拥有全部内存，
+// 并且几乎所有的内存分配请求都通过这个接口进行。
 class BFCAllocator : public Allocator {
 ```
 
 1. **这是一个简化版的[dlmalloc](https://gee.cs.oswego.edu/dl/html/malloc.html)**——所以接下来看到的所有设计（切分Chunk、相邻合并、按大小分桶）在CPU malloc的世界里都有几十年历史了，只是被搬到了GPU显存上。
-2. **它的核心Assumption是"这个进程拥有几乎全部内存，且几乎所有分配请求都走我这里"**——这样的话，Jax就可以放心地在自己的池子里做切分与合并，从而最大化程度减少碎片化。
+2. **它的核心前提是"这个进程拥有几乎全部内存，且几乎所有分配请求都走我这里"**——这样的话，Jax就可以放心地在自己的池子里做切分与合并，从而最大化程度减少碎片化。
 
 它的简化版工作流程是：
 1. 一开始向GPU一次性要一大片连续内存（默认75%，可以通过环境变量`XLA_PYTHON_CLIENT_MEM_FRACTION`控制）。
@@ -102,11 +100,10 @@ static constexpr size_t kMinAllocationSize = 1 << kMinAllocationBits;  // 256B
 #### 2. Chunk：内存分配与释放的基本单位
 
 ```cpp
-// A Chunk points to a piece of memory that's either entirely free or entirely
-// in use by one user memory allocation.
-// 
-// Chunks participate in a doubly-linked list, 
-// and the prev/next pointers point to the physically adjacent chunks.
+// 一个 Chunk 指向一块内存，这块内存要么整块空闲，要么整块被某一次用户分配占用。
+//
+// 所有 Chunk 串成一个双向链表，
+// prev/next 指针指向物理上紧邻的前后 Chunk。
 struct Chunk {
   size_t size = 0;            // 这块内存的实际大小
   size_t requested_size = 0;  // 用户真正请求的大小（size >= requested_size）
@@ -129,18 +126,18 @@ struct Chunk {
 #### 3. Bin：空闲Chunk的快速索引
 
 ```cpp
-// A Bin is a collection of similar-sized free chunks.
-// Allocated chunks are never in a Bin.
+// 一个 Bin 是一组大小相近的空闲 Chunk 的集合。
+// 已分配的 Chunk 永远不会出现在 Bin 里。
 struct Bin {
-  // All chunks in this bin have >= bin_size memory.
+  // 这个 Bin 里的所有 Chunk 大小都 >= bin_size。
   size_t bin_size = 0;
 
-  // List of free chunks within the bin, sorted by chunk size.
+  // Bin 内的空闲 Chunk 列表，按 Chunk 大小排序。
   FreeChunkSet free_chunks;  // absl::btree_set<ChunkHandle, ChunkComparator>
 };
 
 class ChunkComparator {
-   // Sort first by size and then use pointer address as a tie breaker.
+   // 先按 size 排序，size 相同时用指针地址作为决胜判据（tie breaker）。
    bool operator()(const ChunkHandle ha, const ChunkHandle hb) const
          ABSL_NO_THREAD_SAFETY_ANALYSIS {
       const Chunk* a = allocator_->ChunkFromHandle(ha);
@@ -294,8 +291,7 @@ bool BFCAllocator::Extend(size_t alignment, size_t rounded_bytes) {
 拿到内存后，关键的一步是：把整块新内存包装成**一个**大的空闲Chunk，然后丢进对应的Bin里。
 
 ```cpp
-  // Create one large chunk for the whole memory space that will
-  // be chunked later.
+  // 把整块新内存先包成一个大的 Chunk，后续再按需切分。
   ChunkHandle h = AllocateChunk();
   BFCAllocator::Chunk* c = ChunkFromHandle(h);
   c->ptr = mem_addr;
