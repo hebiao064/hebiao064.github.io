@@ -54,9 +54,10 @@ Workflow for adding a new blog cover:
 2. Verify rights on the official source page/API. For Art Institute of Chicago API results, prefer records with `is_public_domain: true`; their API data includes CC0 metadata. For The Met API, prefer `isPublicDomain: true`.
 3. Create a cropped site asset under `assets/home/open-art/` named `<artist-or-theme>-<short-title>-cover.jpg`, resized to 1200×900, `object-fit: cover` friendly, and reasonably compressed. Do not commit huge original downloads unless specifically needed.
 4. Add the source to `assets/home/open-art/README.md` with filename, artwork title, artist, and official source URL.
-5. Set the post front matter `image:` to the new cover path. If the post has English and Chinese versions of the same article, reuse the same cover for both.
-6. Add or update `summary:` so homepage cards have concise editorial copy.
-7. Run `bundle exec jekyll build`, then preview the homepage and the post page. Check that the image loads and crops well on desktop, that phone-width layouts hide cover art, and that there is no horizontal overflow.
+5. Add the artwork metadata to `_data/open_art.yml` so post pages can render the museum-style caption with artwork title, artist, year, and source link.
+6. Set the post front matter `image:` to the new cover path. If the post has English and Chinese versions of the same article, reuse the same cover for both.
+7. Add or update `summary:` so homepage cards have concise editorial copy.
+8. Run `bundle exec jekyll build`, then preview the homepage and the post page. Check that the image loads and crops well on desktop, that the post page caption appears, that phone-width layouts hide cover art, and that there is no horizontal overflow.
 
 Useful Art Institute IIIF image URL pattern:
 ```text
