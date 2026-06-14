@@ -898,24 +898,47 @@ table {
 
 @media (max-width: 560px) {
   .site-header {
-    padding: 18px 16px;
+    gap: 11px;
+    padding: 16px 16px 14px;
   }
 
   .site-brand {
     align-items: flex-start;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .site-brand-mark {
+    height: 30px;
+    width: 30px;
+  }
+
+  .site-title {
+    font-size: 1.08rem;
   }
 
   .site-description {
-    font-size: 0.64rem;
+    font-size: 0.6rem;
+    max-width: 24rem;
   }
 
   .site-nav,
   .language-nav {
-    gap: 14px;
+    gap: 16px;
+    justify-content: flex-start;
+  }
+
+  .language-nav {
+    border-top: 1px solid $line-soft;
+    padding-top: 2px;
   }
 
   .home-feed {
-    padding: 24px 16px 44px;
+    padding: 20px 16px 44px;
+  }
+
+  .home-intro {
+    padding: 18px 0 26px;
   }
 
   .home-intro h1 {
