@@ -2,13 +2,19 @@
 {% assign image_alt = include.alt | default: "" %}
 {% assign image_loading = include.loading | default: "lazy" %}
 {% assign mobile_breakpoint = site.mobile_cover_art_breakpoint | default: "719px" %}
-{% assign mobile_placeholder = "data:image/gif;base64,R0lGODlhAQABAAAAACw=" %}
+{% assign mobile_placeholder = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" %}
+{% assign hide_on_mobile = site.hide_cover_art_on_mobile %}
+{% unless include.hide_on_mobile == nil %}
+	{% assign hide_on_mobile = include.hide_on_mobile %}
+{% endunless %}
 
-{% if site.hide_cover_art_on_mobile %}
+{% if hide_on_mobile %}
 	<picture>
 		<source media="(max-width: {{ mobile_breakpoint }})" srcset="{{ mobile_placeholder }}">
 		<img src="{{ image_src | relative_url }}" alt="{{ image_alt | escape }}" loading="{{ image_loading }}" decoding="async">
 	</picture>
 {% else %}
-	<img src="{{ image_src | relative_url }}" alt="{{ image_alt | escape }}" loading="{{ image_loading }}" decoding="async">
+	<picture>
+		<img src="{{ image_src | relative_url }}" alt="{{ image_alt | escape }}" loading="{{ image_loading }}" decoding="async">
+	</picture>
 {% endif %}

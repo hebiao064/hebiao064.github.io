@@ -20,7 +20,7 @@ layout: default
 			{% assign cover_alt = artwork.title %}
 		{% endif %}
 		<figure class="post-cover">
-			{% include responsive-cover-image.html src=page.image alt=cover_alt loading="eager" %}
+			{% include responsive-cover-image.html src=page.image alt=cover_alt loading="eager" hide_on_mobile=false %}
 			{% if artwork %}
 				<figcaption class="artwork-caption">
 					<span class="artwork-caption-title">{{ artwork.title }}</span>
