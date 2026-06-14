@@ -1103,3 +1103,9 @@ table {
     padding: 0.85rem;
   }
 }
+
+@media (max-width: 719px) {
+  .site-main > article .post-cover {
+    display: none;
+  }
+}
