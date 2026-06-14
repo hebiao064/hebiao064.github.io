@@ -14,8 +14,20 @@ layout: default
 	</header>
 
 	{% if page.image %}
+		{% assign artwork = site.data.open_art | where: "src", page.image | first %}
+		{% assign cover_alt = page.title %}
+		{% if artwork %}
+			{% assign cover_alt = artwork.title %}
+		{% endif %}
 		<figure class="post-cover">
-			{% include responsive-cover-image.html src=page.image alt=page.title loading="eager" %}
+			{% include responsive-cover-image.html src=page.image alt=cover_alt loading="eager" %}
+			{% if artwork %}
+				<figcaption class="artwork-caption">
+					<span class="artwork-caption-title">{{ artwork.title }}</span>
+					<span class="artwork-caption-meta">{{ artwork.artist }}, {{ artwork.year }}</span>
+					<a class="artwork-caption-source" href="{{ artwork.source }}">Art Institute of Chicago</a>
+				</figcaption>
+			{% endif %}
 		</figure>
 	{% endif %}
 

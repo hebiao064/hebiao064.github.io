@@ -676,18 +676,60 @@ table {
   }
 
   .post-cover {
-    aspect-ratio: 16 / 9;
-    display: flex;
-    margin: 0 0 2rem;
+    background: transparent;
+    border: 0;
+    display: block;
+    margin: 0 0 2.4rem;
+    overflow: visible;
+
+    picture {
+      aspect-ratio: 4 / 3;
+      background: $wash;
+      display: flex;
+      height: auto;
+      overflow: hidden;
+      width: 100%;
+    }
 
     img {
       border: 0;
       height: 100%;
       margin: 0;
-      object-fit: contain;
-      padding: 22px;
+      object-fit: cover;
+      padding: 0;
       width: 100%;
     }
+  }
+
+  .artwork-caption {
+    color: $muted;
+    display: grid;
+    gap: 0.24rem;
+    margin-top: 0.68rem;
+  }
+
+  .artwork-caption-title {
+    color: $ink;
+    font-family: $serif;
+    font-size: 0.98rem;
+    font-style: italic;
+    line-height: 1.28;
+  }
+
+  .artwork-caption-meta,
+  .artwork-caption-source {
+    font-family: $mono;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    line-height: 1.35;
+    text-transform: uppercase;
+  }
+
+  .artwork-caption-source {
+    border-bottom: 1px solid currentColor;
+    color: $accent-cool;
+    justify-self: start;
   }
 
   .divider {
@@ -1041,10 +1083,6 @@ table {
 
   .featured-copy h2 {
     font-size: 1.8rem;
-  }
-
-  .post-cover img {
-    padding: 16px;
   }
 
   .site-main > article {
