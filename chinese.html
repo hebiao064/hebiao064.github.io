@@ -13,6 +13,32 @@ permalink: /chinese/
 		<p>关于 LLM 系统、训练基础设施和底层机制的技术笔记。</p>
 	</header>
 
+	<section class="mobile-year-feed" aria-label="按年份浏览文章">
+		{% assign mobile_current_year = "" %}
+			{% for post in chinese_posts %}
+				{% capture post_year %}{{ post.date | date: "%Y" }}{% endcapture %}
+				{% if post_year != mobile_current_year %}
+					{% if mobile_current_year != "" %}
+							</div>
+						</section>
+					{% endif %}
+					<section class="mobile-year-group" aria-labelledby="mobile-year-zh-{{ post_year }}">
+						<h2 id="mobile-year-zh-{{ post_year }}" class="mobile-year-label code">{{ post_year }}</h2>
+						<div class="mobile-post-list">
+					{% assign mobile_current_year = post_year %}
+				{% endif %}
+				<article class="mobile-post">
+					<time class="post-date code" datetime="{{ post.date | date_to_xmlschema }}">{{ post.updated | default: post.date | date: "%Y-%m-%d" }}</time>
+					<h3><a href="{{ post.url | relative_url }}">{{ post.title }}</a></h3>
+					<p>{{ post.summary | default: post.excerpt | strip_html | strip_newlines | truncate: 110 }}</p>
+				</article>
+			{% endfor %}
+		{% if mobile_current_year != "" %}
+				</div>
+			</section>
+		{% endif %}
+	</section>
+
 	{% if featured_post %}
 		<article class="featured-post">
 			<a class="featured-image" href="{{ featured_post.url | relative_url }}" aria-label="{{ featured_post.title | escape }}">
