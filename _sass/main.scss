@@ -865,12 +865,13 @@ table {
 
 .authors-section {
   flex-wrap: wrap;
+}
 
-  img {
-    background: transparent;
-    border: 0;
-    margin: 0;
-  }
+.site-main > article .authors-section img {
+  background: transparent;
+  border: 0;
+  display: inline-block;
+  margin: 0;
 }
 
 .site-main > article table:not(.feature-table) {
