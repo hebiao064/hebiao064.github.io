@@ -599,8 +599,8 @@ table {
 
   .mobile-year-group + .mobile-year-group {
     border-top: 1px solid $line-soft;
-    margin-top: 22px;
-    padding-top: 18px;
+    margin-top: 18px;
+    padding-top: 15px;
   }
 
   .mobile-year-label {
@@ -609,12 +609,12 @@ table {
     font-weight: 800;
     letter-spacing: 0.16em;
     line-height: 1;
-    margin: 0 0 10px;
+    margin: 0 0 8px;
     text-transform: uppercase;
   }
 
   .mobile-post {
-    padding: 11px 0 13px;
+    padding: 9px 0 10px;
   }
 
   .mobile-post + .mobile-post {
@@ -622,9 +622,9 @@ table {
   }
 
   .mobile-post h3 {
-    font-size: 1.34rem;
-    line-height: 1.18;
-    margin: 0.42rem 0 0.52rem;
+    font-size: 1.08rem;
+    line-height: 1.22;
+    margin: 0.3rem 0 0.34rem;
   }
 
   .mobile-post a {
