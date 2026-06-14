@@ -585,8 +585,7 @@ table {
   }
 
   .featured-image,
-  .post-card-image,
-  .post-cover {
+  .post-card-image {
     display: none;
   }
 
@@ -1101,11 +1100,5 @@ table {
   pre {
     font-size: 0.78rem;
     padding: 0.85rem;
-  }
-}
-
-@media (max-width: 719px) {
-  .site-main > article .post-cover {
-    display: none;
   }
 }
