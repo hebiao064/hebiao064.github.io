@@ -1,6 +1,8 @@
 ---
 title: Efficient RL Training - Optimizing Memory Usage in verl
 updated: 2025-06-21 11:11
+image: /assets/home/open-art/monet-normandy-train-cover.jpg
+summary: A systems deep dive into memory pressure in RL training and the techniques that make larger policy rollouts feasible.
 ---
 
 

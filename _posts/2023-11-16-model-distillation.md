@@ -1,6 +1,8 @@
 ---
 title: Model Distillation using Tensorflow, Pytorch and Google JAX
 updated: 2023-01-16 10:38
+image: /assets/home/open-art/cezanne-bay-of-marseille-cover.jpg
+summary: An introduction to model distillation, where a smaller student network learns from a larger teacher model.
 ---
 
 

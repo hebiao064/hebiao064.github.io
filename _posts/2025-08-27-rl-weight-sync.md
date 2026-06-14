@@ -1,6 +1,8 @@
 ---
 title: Efficient RL Training - Optimizing Weight Sync in slime
 updated: 2025-08-27 11:11
+image: /assets/home/open-art/caillebotte-paris-street-rainy-day-cover.jpg
+summary: A look at how slime synchronizes weights between training and rollout engines, and where the main performance wins come from.
 ---
 
 <div class="authors-section" style="display: flex; justify-content: center; margin: 40px 0; gap: 40px;">

@@ -3,27 +3,73 @@ layout: default
 permalink: /chinese/
 ---
 
-<section>
+{% assign chinese_posts = site.posts | where: "lang", "zh" %}
+{% assign featured_post = chinese_posts | first %}
 
-	{% assign chinese_posts = site.posts | where: "lang", "zh" %}
+<section class="home-feed" aria-labelledby="home-title">
+	<header class="home-intro">
+		<p class="eyebrow code">Biao's Blog</p>
+		<h1 id="home-title">ML Systems</h1>
+		<p>关于 LLM 系统、训练基础设施和底层机制的技术笔记。</p>
+	</header>
+
+	{% if featured_post %}
+		<article class="featured-post">
+			<a class="featured-image" href="{{ featured_post.url | relative_url }}" aria-label="{{ featured_post.title | escape }}">
+				{% if featured_post.image %}
+					<img src="{{ featured_post.image | relative_url }}" alt="{{ featured_post.title | escape }}">
+				{% else %}
+					<img src="{{ "/assets/logo_wrapper.png" | relative_url }}" alt="{{ featured_post.title | escape }}">
+				{% endif %}
+			</a>
+			<div class="featured-copy">
+				<p class="eyebrow code">最新博客</p>
+				<h2><a href="{{ featured_post.url | relative_url }}">{{ featured_post.title }}</a></h2>
+				<p class="post-summary">{{ featured_post.summary | default: featured_post.excerpt | strip_html | strip_newlines | truncate: 120 }}</p>
+				<time class="post-date code" datetime="{{ featured_post.date | date_to_xmlschema }}">{{ featured_post.updated | default: featured_post.date | date: "%Y-%m-%d" }}</time>
+			</div>
+		</article>
+	{% endif %}
+
+	<div class="section-heading">
+		<h2>文章</h2>
+		<p>中文技术写作与系统实现笔记。</p>
+	</div>
+
 	{% assign current_year = "" %}
-	{% for post in chinese_posts %}
-		{% capture post_year %}{{ post.date | date: '%Y' }}{% endcapture %}
-		{% if post_year != current_year %}
-			<h3 class="code">{{ post_year }}</h3>
-			{% assign current_year = post_year %}
-		{% endif %}
-
-		<ul>
-			<li>
-				<div class="post-date code">
-					<span>{{ post.date | date: "%b %d" }}</span>
+		{% for post in chinese_posts offset:1 %}
+			{% capture post_year %}{{ post.date | date: "%Y" }}{% endcapture %}
+			{% if post_year != current_year %}
+				{% if current_year != "" %}
+					</div>
+				</section>
+				{% endif %}
+				<section class="year-group" aria-labelledby="year-{{ post_year }}">
+					<div class="year-divider">
+						<span class="year-rule" aria-hidden="true"></span>
+						<h3 id="year-{{ post_year }}" class="year-label code">{{ post_year }}</h3>
+						<span class="year-rule" aria-hidden="true"></span>
+					</div>
+					<div class="post-grid">
+				{% assign current_year = post_year %}
+			{% endif %}
+			<article class="post-card">
+				<a class="post-card-image" href="{{ post.url | relative_url }}" aria-label="{{ post.title | escape }}">
+					{% if post.image %}
+						<img src="{{ post.image | relative_url }}" alt="{{ post.title | escape }}">
+					{% else %}
+						<img src="{{ "/assets/logo_wrapper.png" | relative_url }}" alt="{{ post.title | escape }}">
+					{% endif %}
+				</a>
+				<div class="post-card-copy">
+					<time class="post-date code" datetime="{{ post.date | date_to_xmlschema }}">{{ post.updated | default: post.date | date: "%Y-%m-%d" }}</time>
+					<h3><a href="{{ post.url | relative_url }}">{{ post.title }}</a></h3>
+					<p>{{ post.summary | default: post.excerpt | strip_html | strip_newlines | truncate: 110 }}</p>
 				</div>
-				<div class="title">
-					<a href="{{ post.url | prepend: site.baseurl | prepend: site.url }}">{{ post.title }}</a>
-				</div>
-			</li>
-		</ul>
-	{% endfor %}
-
+			</article>
+		{% endfor %}
+	{% if current_year != "" %}
+			</div>
+		</section>
+	{% endif %}
 </section>

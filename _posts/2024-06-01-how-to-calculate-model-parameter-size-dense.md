@@ -1,6 +1,8 @@
 ---
 title: How to Calculate LLM Model Parameter Size - Dense Model
 updated: 2024-06-01 11:11
+image: /assets/home/open-art/monet-stacks-of-wheat-cover.jpg
+summary: A practical walkthrough for estimating dense LLM parameter counts from architecture details and model code.
 ---
 
 

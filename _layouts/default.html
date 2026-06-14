@@ -4,19 +4,19 @@ published: true
 ---
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{% if page.lang == 'zh' or page.url == '/chinese/' or page.url == '/chinese/index.html' %}zh-Hans{% else %}en{% endif %}">
 
 	<head>
 		{% include head.html %}
 	</head>
 
-	<body>
+	<body class="layout-{{ page.layout | default: 'default' }}{% if page.lang == 'zh' or page.url == '/chinese/' or page.url == '/chinese/index.html' %} lang-zh{% endif %}">
 
 		{% include header.html %}
 
-		<div id="content">
+		<main id="content" class="site-main">
 			{{ content }}
-		</div>
+		</main>
 
 		{% include footer.html %}
 

@@ -1,6 +1,8 @@
 ---
 title: How JAX Allocates Memory
 updated: 2026-06-11 23:33
+image: /assets/home/open-art/seurat-la-grande-jatte-cover.jpg
+summary: A deep dive into JAX GPU memory allocation, BFCAllocator preallocation, and how it differs from PyTorch caching.
 ---
 
 
