@@ -16,11 +16,7 @@ permalink: /chinese/
 	{% if featured_post %}
 		<article class="featured-post">
 			<a class="featured-image" href="{{ featured_post.url | relative_url }}" aria-label="{{ featured_post.title | escape }}">
-				{% if featured_post.image %}
-					<img src="{{ featured_post.image | relative_url }}" alt="{{ featured_post.title | escape }}">
-				{% else %}
-					<img src="{{ "/assets/logo_wrapper.png" | relative_url }}" alt="{{ featured_post.title | escape }}">
-				{% endif %}
+				{% include responsive-cover-image.html src=featured_post.image alt=featured_post.title loading="eager" %}
 			</a>
 			<div class="featured-copy">
 				<p class="eyebrow code">最新博客</p>
@@ -55,11 +51,7 @@ permalink: /chinese/
 			{% endif %}
 			<article class="post-card">
 				<a class="post-card-image" href="{{ post.url | relative_url }}" aria-label="{{ post.title | escape }}">
-					{% if post.image %}
-						<img src="{{ post.image | relative_url }}" alt="{{ post.title | escape }}">
-					{% else %}
-						<img src="{{ "/assets/logo_wrapper.png" | relative_url }}" alt="{{ post.title | escape }}">
-					{% endif %}
+					{% include responsive-cover-image.html src=post.image alt=post.title %}
 				</a>
 				<div class="post-card-copy">
 					<time class="post-date code" datetime="{{ post.date | date_to_xmlschema }}">{{ post.updated | default: post.date | date: "%Y-%m-%d" }}</time>

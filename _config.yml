@@ -11,6 +11,8 @@ permalink:          /:title # Post permalink
 timezone:           America/Los_Angeles # https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
 mathjax:            true  # enables support for mathjax - set to 'false' to disable
 social_share_previews: true
+hide_cover_art_on_mobile: true
+mobile_cover_art_breakpoint: 719px
 
 # Site Build
 highlighter:        rouge
@@ -46,4 +48,3 @@ defaults:
       type:         "posts"
     values:
       layout:       "post"
-
