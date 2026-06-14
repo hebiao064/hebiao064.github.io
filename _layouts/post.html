@@ -15,7 +15,7 @@ layout: default
 
 	{% if page.image %}
 		<figure class="post-cover">
-			<img src="{{ page.image | relative_url }}" alt="{{ page.title | escape }}">
+			{% include responsive-cover-image.html src=page.image alt=page.title loading="eager" %}
 		</figure>
 	{% endif %}
 

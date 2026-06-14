@@ -398,6 +398,14 @@ table {
   display: flex;
 }
 
+.featured-image picture,
+.post-card-image picture,
+.post-cover picture {
+  display: block;
+  height: 100%;
+  width: 100%;
+}
+
 .featured-image {
   aspect-ratio: 4 / 3;
 
@@ -561,6 +569,22 @@ table {
     font-size: 0.96rem;
     line-height: 1.62;
     margin: 0;
+  }
+}
+
+@media (max-width: 719px) {
+  .featured-image,
+  .post-card-image,
+  .post-cover {
+    display: none;
+  }
+
+  .featured-post {
+    gap: 0;
+  }
+
+  .post-card-copy {
+    padding-top: 12px;
   }
 }
 

@@ -47,6 +47,8 @@ lang: zh   # optional, omit for English
 
 **Homepage cover art.** Each post should have a 4:3 cover image in front matter via `image:`. The current visual direction is editorial/open-access artwork: public-domain museum images cropped into consistent 1200×900 covers. Prefer this over AI-generated abstract images unless the user explicitly asks for generated art.
 
+Mobile cover behavior is configured in `_config.yml`: `hide_cover_art_on_mobile: true` plus `mobile_cover_art_breakpoint: 719px` means cover images are not loaded or displayed on single-column phone layouts. The templates route cover images through `_includes/responsive-cover-image.html`; keep using that include instead of raw `<img>` tags for homepage/post covers.
+
 Workflow for adding a new blog cover:
 1. Find an official open-access/public-domain artwork from a stable museum source such as the Art Institute of Chicago, The Met, or the National Gallery of Art. Do not scrape Google Arts & Culture directly; use it only for inspiration, then fetch from the original museum record.
 2. Verify rights on the official source page/API. For Art Institute of Chicago API results, prefer records with `is_public_domain: true`; their API data includes CC0 metadata. For The Met API, prefer `isPublicDomain: true`.
@@ -54,7 +56,7 @@ Workflow for adding a new blog cover:
 4. Add the source to `assets/home/open-art/README.md` with filename, artwork title, artist, and official source URL.
 5. Set the post front matter `image:` to the new cover path. If the post has English and Chinese versions of the same article, reuse the same cover for both.
 6. Add or update `summary:` so homepage cards have concise editorial copy.
-7. Run `bundle exec jekyll build`, then preview the homepage and the post page. Check that the image loads, the crop works on desktop/mobile, and there is no horizontal overflow.
+7. Run `bundle exec jekyll build`, then preview the homepage and the post page. Check that the image loads and crops well on desktop, that phone-width layouts hide cover art, and that there is no horizontal overflow.
 
 Useful Art Institute IIIF image URL pattern:
 ```text
