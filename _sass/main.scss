@@ -481,6 +481,10 @@ table {
   }
 }
 
+.mobile-year-feed {
+  display: none;
+}
+
 .year-group {
   padding-top: 10px;
 
@@ -573,18 +577,59 @@ table {
 }
 
 @media (max-width: 719px) {
+  .home-intro,
+  .featured-post,
+  .section-heading,
+  .year-group {
+    display: none;
+  }
+
   .featured-image,
   .post-card-image,
   .post-cover {
     display: none;
   }
 
-  .featured-post {
-    gap: 0;
+  .mobile-year-feed {
+    display: block;
   }
 
-  .post-card-copy {
-    padding-top: 12px;
+  .mobile-year-group {
+    margin: 0;
+  }
+
+  .mobile-year-group + .mobile-year-group {
+    border-top: 1px solid $line-soft;
+    margin-top: 22px;
+    padding-top: 18px;
+  }
+
+  .mobile-year-label {
+    color: $accent;
+    font-size: 0.74rem;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    line-height: 1;
+    margin: 0 0 10px;
+    text-transform: uppercase;
+  }
+
+  .mobile-post {
+    padding: 11px 0 13px;
+  }
+
+  .mobile-post + .mobile-post {
+    border-top: 1px solid $line-soft;
+  }
+
+  .mobile-post h3 {
+    font-size: 1.34rem;
+    line-height: 1.18;
+    margin: 0.42rem 0 0.52rem;
+  }
+
+  .mobile-post a {
+    border: 0;
   }
 }
 
@@ -649,6 +694,12 @@ table {
     border-top: 1px solid $line-soft;
     height: 0;
     margin: 2rem 0;
+  }
+
+  .divider + h2 {
+    border-top: 0;
+    margin-top: 0;
+    padding-top: 0;
   }
 
   .center {
@@ -922,13 +973,17 @@ table {
 
 @media (max-width: 560px) {
   .site-header {
+    column-gap: 18px;
     gap: 11px;
+    grid-template-columns: auto minmax(0, 1fr);
     padding: 16px 16px 14px;
+    row-gap: 12px;
   }
 
   .site-brand {
     align-items: flex-start;
     gap: 10px;
+    grid-column: 1 / -1;
     width: 100%;
   }
 
@@ -948,13 +1003,28 @@ table {
 
   .site-nav,
   .language-nav {
-    gap: 16px;
+    flex-wrap: nowrap;
+    gap: 14px;
     justify-content: flex-start;
   }
 
+  .site-nav {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
   .language-nav {
-    border-top: 1px solid $line-soft;
-    padding-top: 2px;
+    border-top: 0;
+    grid-column: 2;
+    grid-row: 2;
+    justify-content: flex-end;
+    justify-self: end;
+    padding-top: 0;
+  }
+
+  .site-nav .nav-link,
+  .language-nav .nav-link {
+    white-space: nowrap;
   }
 
   .home-feed {
