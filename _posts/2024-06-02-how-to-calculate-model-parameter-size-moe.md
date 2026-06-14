@@ -1,6 +1,8 @@
 ---
 title: How to Calculate LLM Model Parameter Size - MoE Model
 updated: 2024-06-02 11:11
+image: /assets/home/open-art/cezanne-basket-of-apples-cover.jpg
+summary: A worked guide to counting parameters in MoE language models, with Qwen-style expert layers as the running example.
 ---
 
 

@@ -1,28 +1,24 @@
-<aside class="logo">
-
-	{% if page.url == '/index.html' or page.url == '/' %}
-		{% assign link = '/about' %}
-		{% assign prompt = 'About the Author' %}
-	{% else %}
-		{% assign link = '/' %}
-		{% assign prompt = 'Back to Index' %}
-	{% endif %}
-
-	<a href="{{ link | prepend: site.baseurl | prepend: site.url }}">
-		<img src="{{ site.logo_url }}" alt="" class="logo-avatar">
+<header class="site-header">
+	<a class="site-brand" href="{{ "/" | relative_url }}" aria-label="{{ site.title }}">
+		<span class="site-brand-mark">B</span>
+		<span class="site-brand-text">
+			<span class="site-title">{{ site.title }}</span>
+			<span class="site-description">{{ site.description }}</span>
+		</span>
 	</a>
-	<span class="logo-prompt code">{{ prompt }}</span>
 
-</aside>
+	<nav class="site-nav" aria-label="Primary navigation">
+		<a class="nav-link" href="{{ "/" | relative_url }}">Blogs</a>
+		<a class="nav-link" href="{{ "/about" | relative_url }}">About</a>
+	</nav>
 
-<nav class="language-nav">
-	{% if page.url == '/chinese/' or page.url == '/chinese/index.html' or page.lang == 'zh' %}
-		<a href="/" class="nav-link">English</a>
-		<span class="nav-separator">|</span>
-		<span class="nav-link active">中文版</span>
-	{% else %}
-		<span class="nav-link active">English</span>
-		<span class="nav-separator">|</span>
-		<a href="/chinese/" class="nav-link">中文版</a>
-	{% endif %}
-</nav>
+	<nav class="language-nav" aria-label="Language navigation">
+		{% if page.url == '/chinese/' or page.url == '/chinese/index.html' or page.lang == 'zh' %}
+			<a href="{{ "/" | relative_url }}" class="nav-link">English</a>
+			<span class="nav-link active">中文版</span>
+		{% else %}
+			<span class="nav-link active">English</span>
+			<a href="{{ "/chinese/" | relative_url }}" class="nav-link">中文版</a>
+		{% endif %}
+	</nav>
+</header>

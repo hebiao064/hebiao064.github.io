@@ -1,6 +1,8 @@
 ---
 title: Template for a blog post
 updated: 2023-05-12 11:11
+image: /assets/home/open-art/vangogh-poets-garden-cover.jpg
+summary: A compact typography and Markdown sample for checking how the blog theme renders common writing elements.
 ---
 
 **NOTE:** This markdown cheatsheet is a typography demo for this theme. Check out this post to learn more about this markdown usage when you want to get started with this theme. Enjoy!

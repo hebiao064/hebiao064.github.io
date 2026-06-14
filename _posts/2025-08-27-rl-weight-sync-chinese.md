@@ -2,6 +2,8 @@
 title: 高效强化学习训练 - 优化slime中的权重同步
 updated: 2025-08-27 11:11
 lang: zh
+image: /assets/home/open-art/caillebotte-paris-street-rainy-day-cover.jpg
+summary: 解析 slime 中训练侧与推理侧权重同步的瓶颈、通信路径和优化思路。
 ---
 
 > 本文也在我的知乎专栏中发布，[知乎链接](https://zhuanlan.zhihu.com/p/1945671848684658923)

@@ -2,6 +2,8 @@
 title: JAX 是怎么分配内存的
 updated: 2026-06-11 23:33
 lang: zh
+image: /assets/home/open-art/seurat-la-grande-jatte-cover.jpg
+summary: 从 BFC Allocator、预分配和碎片整理入手，解释 JAX 的 GPU 内存管理为什么和 PyTorch 不一样。
 ---
 
 

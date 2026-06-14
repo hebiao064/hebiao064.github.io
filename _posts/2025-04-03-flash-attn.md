@@ -1,6 +1,8 @@
 ---
 title: What is Flash Attention?
 updated: 2025-04-03 11:11
+image: /assets/home/open-art/monet-water-lilies-cover.jpg
+summary: A visual explanation of Flash Attention and how IO-aware tiling reduces memory traffic for modern attention kernels.
 ---
 
 ## Introduction

@@ -1,6 +1,8 @@
 ---
 title: Implement Flash Attention Backend in SGLang - Basics and KV Cache
 updated: 2025-04-26 11:11
+image: /assets/home/open-art/vangogh-bedroom-cover.jpg
+summary: Notes on SGLang attention backend internals, from Flash Attention basics to KV cache layout and execution flow.
 ---
 
 
