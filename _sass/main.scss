@@ -573,6 +573,10 @@ table {
 }
 
 @media (max-width: 719px) {
+  .home-intro {
+    display: none;
+  }
+
   .featured-image,
   .post-card-image,
   .post-cover {
