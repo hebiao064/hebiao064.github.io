@@ -29,7 +29,6 @@ layout: default
 				<article class="mobile-post">
 					<time class="post-date code" datetime="{{ post.date | date_to_xmlschema }}">{{ post.updated | default: post.date | date: "%b %-d, %Y" }}</time>
 					<h3><a href="{{ post.url | relative_url }}">{{ post.title }}</a></h3>
-					<p>{{ post.summary | default: post.excerpt | strip_html | strip_newlines | truncate: 150 }}</p>
 				</article>
 			{% endfor %}
 		{% if mobile_current_year != "" %}
